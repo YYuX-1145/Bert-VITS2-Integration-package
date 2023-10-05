@@ -37,7 +37,7 @@ torch.backends.cudnn.benchmark = True
 torch.backends.cuda.sdp_kernel("flash")
 torch.backends.cuda.enable_flash_sdp(True)
 #torch.backends.cuda.enable_mem_efficient_sdp(
-  #  True
+#    True
 #)  # Not available if torch version is lower than 2.0
 torch.backends.cuda.enable_math_sdp(True)
 global_step = 0
@@ -74,16 +74,8 @@ def run():
         shuffle=True,
     )
     collate_fn = TextAudioSpeakerCollate()
-    train_loader = DataLoader(
-        train_dataset,
-        num_workers=16,
-        shuffle=False,
-        pin_memory=True,
-        collate_fn=collate_fn,
-        batch_sampler=train_sampler,
-        persistent_workers=True,
-        prefetch_factor=4,
-    )  # DataLoader config could be adjusted.
+    train_loader = DataLoader(train_dataset, num_workers=2, shuffle=False, pin_memory=True,
+                          collate_fn=collate_fn, batch_sampler=train_sampler)
     if rank == 0:
         eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data)
         eval_loader = DataLoader(
