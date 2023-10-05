@@ -1,35 +1,48 @@
-0.环境维护和升级（示例）：
-%PYTHON% -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
-这条一般不用执行
+V1.1.1
 
-安装ffmpeg，将整合包内的ffmpeg加入环境变量，使用自动标注需要用到，执行一次即可。安装完可能需要重启生效：
+环境维护和升级（示例）：
+%PYTHON% -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
+#看不懂的不要执行这条命令。
+
+0.安装ffmpeg：
 %PYTHON% setup_ffmpeg.py
+#执行一次即可。安装是把当前文件夹下ffmpeg加入环境变量，因此执行完不要移动或删除。否则需要手动更改环境变量。安装完可能需要重启才能生效。
 
 1.数据集重采样和标注：
 a.whisper通用标注：音频在2-10s。根据显存选择配置，large需要12G显存。
-%PYTHON% short_audio_transcribe.py --languages "C" --whisper_size large
-%PYTHON% short_audio_transcribe.py --languages "C" --whisper_size medium
-%PYTHON% short_audio_transcribe.py --languages "C" --whisper_size small
-如果已经标注好了，不希望使用本脚本，请将音频重采样至单声道44100Hz
+%PYTHON% short_audio_transcribe.py --languages "CJ" --whisper_size large
+%PYTHON% short_audio_transcribe.py --languages "CJ" --whisper_size medium
+%PYTHON% short_audio_transcribe.py --languages "CJ" --whisper_size small
+#请按说话人分文件夹。
+#下载太慢或者失败，手动安装方法见github。
 
 b.下载的已标注的原神数据集：
 %PYTHON% transcribe_genshin.py
+#请按提示输入对应字母来选择语言。
 
 2.文本处理：
 %PYTHON% preprocess_text.py
+#1.1版本生成的cleaned文件请删除重新生成。
 
 3.bert_gen
 %PYTHON% bert_gen.py
+#生成bert文件
 
 4.训练：
+#请先修改训练配置（位于configs文件夹下）
+
 首次训练：
-%PYTHON% train_ms.py -c ./configs\config.json
+%PYTHON% train_ms.py 
 
 继续训练：
-%PYTHON% train_ms.py -c ./configs\config.json --cont
+%PYTHON% train_ms.py --cont
 
 启动TensorBoard：
 %PYTHON% -m tensorboard.main --logdir=logs\OUTPUT_MODEL
+#看不懂不要管它
 
-5.推理 --config_dir可选 --model_dir 为配置文件和模型指定目录：
-%PYTHON% inference_webui.py --model_dir ./logs\OUTPUT_MODEL\G_100.pth
+5.推理：
+%PYTHON% webui.py -m ./logs\OUTPUT_MODEL\G_100.pth
+#参数：--c 可选，指定配置文件路径  --m为模型指定路径
+
+#考虑到某些因素，取消了按实验名分输出目录的功能设计。若要训练下一个模型，请移走以上步骤产生的所有文件并从步骤1开始。

@@ -6,9 +6,9 @@ import argparse
 import torch
 
 lang2token = {
-            'zh': "[ZH]",
-            'ja': "[JA]",
-            "en": "[EN]",
+            'zh': "ZH|",
+            'ja': "JP|",
+            "en": "EN|",
         }
 def transcribe_one(audio_path):
     # load audio and pad/trim it to fit 30 seconds
@@ -31,23 +31,23 @@ def transcribe_one(audio_path):
     return lang, result.text
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--languages", default="CJE")
+    parser.add_argument("--languages", default="CJ")
     parser.add_argument("--whisper_size", default="medium")
     args = parser.parse_args()
     if args.languages == "CJE":
         lang2token = {
-            'zh': "[ZH]",
-            'ja': "[JA]",
-            "en": "[EN]",
+            'zh': "ZH|",
+            'ja': "JP|",
+            "en": "EN|",
         }
     elif args.languages == "CJ":
         lang2token = {
-            'zh': "[ZH]",
-            'ja': "[JA]",
+            'zh': "ZH|",
+            'ja': "JP|",
         }
     elif args.languages == "C":
         lang2token = {
-            'zh': "[ZH]",
+            'zh': "ZH|",
         }
     assert (torch.cuda.is_available()), "Please enable GPU in order to run Whisper!"
     model = whisper.load_model(args.whisper_size)
@@ -81,8 +81,8 @@ if __name__ == "__main__":
                 if lang not in list(lang2token.keys()):
                     print(f"{lang} not supported, ignoring\n")
                     continue
-                text = "ZH|" + text + "\n"#
-                #text = lang2token[lang] + text + lang2token[lang] + "\n"
+                #text = "ZH|" + text + "\n"
+                text = lang2token[lang] + text + "\n"
                 speaker_annos.append(save_path + "|" + speaker + "|" + text)
                 
                 processed_files += 1

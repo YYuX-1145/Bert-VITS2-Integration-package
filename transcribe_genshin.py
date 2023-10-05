@@ -26,7 +26,7 @@ def process(item):
         )
 
 def process_text(item):
-    spkdir, wav_name, args = item
+    spkdir, wav_name, args,lang = item
     speaker = spkdir.replace("\\", "/").split("/")[-1]
     wav_path = os.path.join(args.in_dir, speaker, wav_name)
     global speaker_annos
@@ -43,7 +43,7 @@ def process_text(item):
         if tr_name.endswith("b"):
            text = text.replace("{M#ÃÃÃÃ}{F#¸ç¸ç}",'¸ç¸ç')
     text = text.replace("#",'')   
-    text = "ZH|" + text + "\n" #
+    text = f'"{lang}|" + text + "\n"' #
     speaker_annos.append(args.out_dir+'/'+speaker+'/'+wav_name+ "|" + speaker + "|" + text)
 
 
@@ -55,7 +55,22 @@ if __name__ == "__main__":
     parser.add_argument("--sr", type=int, default=44100, help="sampling rate")
     parser.add_argument("--in_dir", type=str, default="./genshin_dataset", help="path to source dir")
     parser.add_argument("--out_dir", type=str, default="./genshin_dataset", help="path to target dir")
+    
     args = parser.parse_args()
+   
+    entered = False
+    while not entered:
+      print("Enter a letter to choose language.\n")
+      print("C = Chinese ; J = Japanese ;\n e.g: C \n")
+      languages=input("Enter language: ")
+      if (languages == "C"or languages == "c"):
+        lang='ZH'
+        entered = True
+      elif (languages == "J"or languages == "j"):
+        lang='JP'
+        entered = True
+      else:
+        print("Illegal Arguments! Please try again.\n")
     # processs = 8
     processs = cpu_count()-2 if cpu_count() >4 else 1
     pool = Pool(processes=processs)
@@ -68,7 +83,7 @@ if __name__ == "__main__":
                 pass
             for i in os.listdir(spk_dir):
                if i.endswith("wav"):
-                  pro=(spk_dir, i, args)
+                  pro=(spk_dir, i, args, lang)
                   process_text(pro)
     if len(speaker_annos) == 0:
         print("transcribe error!!!")
