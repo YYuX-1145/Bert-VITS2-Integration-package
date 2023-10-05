@@ -43,7 +43,7 @@ def process_text(item):
         if tr_name.endswith("b"):
            text = text.replace("{M#√√√√}{F#∏Á∏Á}",'∏Á∏Á')
     text = text.replace("#",'')   
-    text = f'"{lang}|" + text + "\n"' #
+    text = f'{lang}|{text}\n' #
     speaker_annos.append(args.out_dir+'/'+speaker+'/'+wav_name+ "|" + speaker + "|" + text)
 
 
