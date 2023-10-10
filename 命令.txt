@@ -7,9 +7,9 @@
 
 1.数据集重采样和标注：
 a.whisper通用标注：音频在2-10s。根据显存选择配置，large需要12G显存。
-%PYTHON% short_audio_transcribe.py --languages "C" --whisper_size large
-%PYTHON% short_audio_transcribe.py --languages "C" --whisper_size medium
-%PYTHON% short_audio_transcribe.py --languages "C" --whisper_size small
+%PYTHON% short_audio_transcribe.py --languages C --whisper_size large
+%PYTHON% short_audio_transcribe.py --languages C --whisper_size medium
+%PYTHON% short_audio_transcribe.py --languages C --whisper_size small
 如果已经标注好了，不希望使用本脚本，请将音频重采样至单声道44100Hz
 
 b.下载的已标注的原神数据集：
