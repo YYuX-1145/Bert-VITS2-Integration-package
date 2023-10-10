@@ -131,6 +131,8 @@ def b2_move_out(parent_path):
         return "请选择文件夹！"
     parent_path=f'{current_directory}/BACKUP/{parent_path}'
     
+    if not os.path.exists(parent_path):
+        return "找不到目录"
     try:
        items0= os.listdir(f'{current_directory}/genshin_dataset')
        items1= os.listdir(f'{current_directory}/custom_character_voice')
