@@ -10,9 +10,9 @@ V1.1.1
 
 1.数据集重采样和标注：
 a.whisper通用标注：音频在2-10s。根据显存选择配置，large需要12G显存。
-%PYTHON% short_audio_transcribe.py --languages "CJ" --whisper_size large
-%PYTHON% short_audio_transcribe.py --languages "CJ" --whisper_size medium
-%PYTHON% short_audio_transcribe.py --languages "CJ" --whisper_size small
+%PYTHON% short_audio_transcribe.py --languages CJ --whisper_size large
+%PYTHON% short_audio_transcribe.py --languages CJ --whisper_size medium
+%PYTHON% short_audio_transcribe.py --languages CJ --whisper_size small
 #请按说话人分文件夹。
 #下载太慢或者失败，手动安装方法见github。
 
