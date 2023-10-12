@@ -1,3 +1,4 @@
+from email.mime import audio
 import shutil
 import gradio as gr
 import os
@@ -5,6 +6,24 @@ import webbrowser
 import subprocess
 import datetime
 import json
+import requests
+import soundfile as sf
+import numpy as np
+
+import re
+def cut_sent(para):
+    para = re.sub('([。！;？\?])([^”’])', r"\1\n\2", para)  # 单字符断句符
+    para = re.sub('(\.{6})([^”’])', r"\1\n\2", para)  # 英文省略号
+    para = re.sub('(\…{2})([^”’])', r"\1\n\2", para)  # 中文省略号
+    para = para.rstrip()  # 段尾如果有多余的\n就去掉它
+    # 复制的
+    return para.split("\n")
+
+def cut_para(text):
+    splitted_para = re.split('[\n]', text)#按段分
+    splitted_para = [sentence.strip() for sentence in splitted_para if sentence.strip()]#删除空字符串
+    return splitted_para
+
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
 if not os.path.exists(f'{current_directory}/BACKUP'):
@@ -176,13 +195,26 @@ def refresh_models_in_logs():
    except Exception as error:
       return(models_logs.update(choices=['null']),f"读取失败 {error}")
 
+speakers_list=[]
+
+def get_speaker_list(config_path):
+    global speakers_list
+    try:
+        config = json.load(open(config_path))
+        speaker_ids = config["data"]["spk2id"]
+        speakers_list = list(speaker_ids.keys())
+    except Exception as e:
+        print(e)
+        speakers_list=[]
+
 def c1_infer(file_name):
     if file_name=='null':
         return "请选择模型！"    
     command = f'venv\python.exe webui.py -c ./logs/OUTPUT_MODEL/config.json -m ./logs/OUTPUT_MODEL/{file_name}'
     print(command+'\n\n')
     subprocess.Popen(['start', 'cmd', '/k', command],cwd=current_directory,shell=True)
-    return '新的命令行窗口已经打开，请关注输出信息。关闭窗口结束推理服务。'
+    get_speaker_list(f'{current_directory}/logs/OUTPUT_MODEL/config.json')
+    return (speaker.update(choices=speakers_list),'新的命令行窗口已经打开，请关注输出信息。关闭窗口结束推理服务。')
 
 def c2_refresh_models_backup():
     refresh_backup_list()
@@ -210,10 +242,74 @@ def c2_infer(bkup_name,model_name):
     command = f'venv\python.exe webui.py -c {path}/config.json -m {path}/{model_name}'
     print(command+'\n\n')
     subprocess.Popen(['start', 'cmd', '/k', command],cwd=current_directory,shell=True)
-    return '新的命令行窗口已经打开，请关注输出信息。关闭窗口结束推理服务。'
+    get_speaker_list(f'{current_directory}/BACKUP/{bkup_name}/logs/OUTPUT_MODEL/config.json')
+    return (speaker.update(choices=speakers_list),'新的命令行窗口已经打开，请关注输出信息。关闭窗口结束推理服务。')
 
+def inference_api(text,spk,sdp,ns,nsw,ls,lang,url):
+        try:
+            # API地址
+            API_URL = 'http://127.0.0.1:7860/run/predict/'#
+            if url!=''and url!='default':
+                API_URL = f'{url}/run/predict/'
+            data_json = {
+                "fn_index":0,
+                "data":[
+                    '"' + text + '"',#text
+                   spk,#spk                 
+                   sdp,	# int | float (numeric value between 0 and 1) in 'SDP Ratio' Slider component
+				   ns,	# int | float (numeric value between 0.1 and 2) in 'Noise Scale' Slider component
+				   nsw,	# int | float (numeric value between 0.1 and 2) in 'Noise Scale W' Slider component
+				   ls,	# int | float (numeric value between 0.1 and 2) in 'Length Scale' Slider component
+                     '"' + lang + '"'#language
+                ],
+            }
+            response = requests.post(url=API_URL, json=data_json)
+            response.raise_for_status() 
+            result = response.content
+            ret = json.loads(result)
+            path = ret['data'][1]['name']
+            return path
+        except :
+            return 'error'
 
+def d1_long_text_infer(text,speaker,sdp_ratio,noise_scale,noise_scale_w,length_scale,language,interval_between_sent,interval_between_para,cut_by_sent,url):
+    if speaker=='null':
+        return ('请选择说话人！',None)
+    while(text.find("\n\n")!=-1):
+        text=text.replace("\n\n","\n")
+    #print(text,speaker,sdp_ratio,noise_scale,noise_scale_w,length_scale,language,interval_between_sent,interval_between_para,cut_by_sent,url)
+    para_list=cut_para(text)
+    audio_list = []
+    #print(para_list)
+    if not cut_by_sent:
+        for p in para_list:
+            path=inference_api(p,speaker,sdp_ratio,noise_scale,noise_scale_w,length_scale,language,url)
+            au,sr = sf.read(path)
+            audio_list.append(au)
+            silence = np.zeros((int)(44100*interval_between_para)) 
+            audio_list.append(silence) 
+    else:
+        for p in para_list:
+            sent_list=cut_sent(p)
+            for s in sent_list:
+               path=inference_api(s,speaker,sdp_ratio,noise_scale,noise_scale_w,length_scale,language,url)
+               au,sr = sf.read(path)
+               audio_list.append(au)
+               silence = np.zeros((int)(44100*interval_between_sent)) 
+               audio_list.append(silence)
+            if (interval_between_para-interval_between_sent)>0:
+               silence = np.zeros((int)(44100*(interval_between_para-interval_between_sent))) 
+               audio_list.append(silence)
+    audio_concat = np.concatenate(audio_list)
+    return ("Success", (44100, audio_concat))
 
+def d2_file_infer(file,speaker,sdp_ratio,noise_scale,noise_scale_w,length_scale,language,interval_between_sent,interval_between_para,cut_by_sent,url):
+    try:
+      with open(file.name, "r", encoding="utf-8") as file:
+         text = file.read()
+         return d1_long_text_infer(text,speaker,sdp_ratio,noise_scale,noise_scale_w,length_scale,language,interval_between_sent,interval_between_para,cut_by_sent,url)
+    except Exception as error:
+        return (error,None)
 if __name__ == "__main__":
     with gr.Blocks(title="Bert-VITS-2-Manager-WebUI") as app:
         gr.Markdown(value="""
@@ -323,7 +419,31 @@ if __name__ == "__main__":
                 with gr.Column():
                     c3_btn = gr.Button(value="推理", variant="primary")
                 '''    
-
+           with gr.TabItem("辅助功能"):
+               gr.Markdown(value='API长句合成(请先启动推理WebUI后使用)') 
+               with gr.Row():
+                   d1_textbox_intput_text = gr.TextArea(label="输入长文本", value="生活就像海洋.只有意志坚强的人。\n才能到达彼岸。",interactive=True) 
+               with gr.Row():            
+                   with gr.Column():
+                       gr.Markdown(value='参数')
+                       speaker = gr.Dropdown(choices=speakers_list,value='null'if not speakers_list else speakers_list[0], label="Speaker")
+                       sdp_ratio = gr.Slider(minimum=0, maximum=1, value=0.2, step=0.1, label="SDP Ratio")
+                       noise_scale = gr.Slider(minimum=0.1, maximum=2, value=0.6, step=0.1, label="Noise Scale")
+                       noise_scale_w = gr.Slider(minimum=0.1, maximum=2, value=0.8, step=0.1, label="Noise Scale W")
+                       length_scale = gr.Slider(minimum=0.1, maximum=2, value=1, step=0.1, label="Length Scale")
+                       language = gr.Dropdown(choices=['ZH','JP'], value='ZH', label="Language")
+                   with gr.Column():   
+                       gr.Markdown(value='选项')
+                       interval_between_sent= gr.Slider(minimum=0, maximum=5, value=0.2, step=0.1, label="句间停顿(秒)，勾选按句切分才生效")
+                       interval_between_para= gr.Slider(minimum=0, maximum=10, value=1, step=0.1, label="段间停顿(秒)，需要大于句间停顿才有效")
+                       opt_cut_by_sent = gr.Checkbox(label = "按句切分    在按段落切分的基础上再按句子切分文本")
+                       url_wui=gr.Textbox(label="WebUI地址 #正常情况下不用填", placeholder="default",lines=2,interactive=True)
+                       input_file = gr.Files(label="上传txt纯文本文件",file_types=['text'],file_count='single')
+                   with gr.Column():
+                       d1_btn = gr.Button("从文本框生成", variant="primary")
+                       d2_btn = gr.Button("从文件生成", variant="primary")
+                       d1_textbox_output_text=gr.Textbox(label="输出信息", placeholder="点击处理按钮",interactive=False)
+                       d1_audio_output = gr.Audio(label="Output Audio")
         a1a_btn.click(
             a1a_transcribe,
             inputs=[whisper_size,language],
@@ -396,19 +516,52 @@ if __name__ == "__main__":
         c1_btn.click(
             c1_infer,
             inputs=[models_logs],
-            outputs=[
-                c1_textbox_output_text,
+            outputs=[speaker,
+                c1_textbox_output_text
             ],
         )
         c1_btn_refresh.click(refresh_models_in_logs,[],[models_logs,c1_textbox_output_text])
         c2_btn.click(
             c2_infer,
             inputs=[backup_name,models_in_backup],
-            outputs=[
+            outputs=[speaker,
                 c2_textbox_output_text,
             ],
         )          
         c2_btn_refresh.click(c2_refresh_models_backup,[],[backup_name,c2_textbox_output_text])
-
+        d1_btn.click(
+            d1_long_text_infer,
+            inputs=[
+                d1_textbox_intput_text,#text
+                speaker,
+                sdp_ratio,
+                noise_scale,
+                noise_scale_w,
+                length_scale,
+                language,
+                interval_between_sent,
+                interval_between_para,
+                opt_cut_by_sent,
+                url_wui
+            ],
+            outputs=[d1_textbox_output_text, d1_audio_output],
+        )
+        d2_btn.click(
+            d2_file_infer,
+            inputs=[
+                input_file,#text
+                speaker,
+                sdp_ratio,
+                noise_scale,
+                noise_scale_w,
+                length_scale,
+                language,
+                interval_between_sent,
+                interval_between_para,
+                opt_cut_by_sent,
+                url_wui
+            ],
+            outputs=[d1_textbox_output_text, d1_audio_output],
+        )
 webbrowser.open("http://127.0.0.1:6660")
 app.launch(server_port=6660)
