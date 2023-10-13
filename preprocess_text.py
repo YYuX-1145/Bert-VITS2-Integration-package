@@ -101,7 +101,7 @@ def main(
 
     config = json.load(open(config_path, encoding="utf-8"))
     config["data"]["spk2id"] = spk_id_map
-    config['data']["n_speakers"] = current_sid+1#
+    config['data']["n_speakers"] = current_sid #
     with open(config_path, "w", encoding="utf-8") as f:
         json.dump(config, f, indent=2, ensure_ascii=False)
 
