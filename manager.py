@@ -259,7 +259,7 @@ def inference_api(text,spk,sdp,ns,nsw,ls,lang,url):
 				   ns,	# int | float (numeric value between 0.1 and 2) in 'Noise Scale' Slider component
 				   nsw,	# int | float (numeric value between 0.1 and 2) in 'Noise Scale W' Slider component
 				   ls,	# int | float (numeric value between 0.1 and 2) in 'Length Scale' Slider component
-                     '"' + lang + '"'#language
+                   lang #language
                 ],
             }
             response = requests.post(url=API_URL, json=data_json)
@@ -320,7 +320,7 @@ if __name__ == "__main__":
         
         适用于整合包版本V1.1.1
                     
-        WebUI更新日期：2023.10.10  
+        WebUI更新日期：2023.10.12  
         """)
         with gr.Tabs():
            with gr.TabItem("训练"):
@@ -336,7 +336,7 @@ if __name__ == "__main__":
                gr.Markdown(value='\n')        
                with gr.Row():              
                     with gr.Column():
-                       a2_btn = gr.Button(value="2.文本预处理：", variant="primary")
+                       a2_btn = gr.Button(value="2.文本预处理", variant="primary")
                with gr.Column():
                        a2_textbox_output_text = gr.Textbox(label="输出信息", placeholder="点击处理按钮",interactive=False)
                gr.Markdown(value='\n')         
