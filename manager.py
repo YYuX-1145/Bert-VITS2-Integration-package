@@ -28,7 +28,16 @@ def cut_para(text):
 current_directory = os.path.dirname(os.path.abspath(__file__))
 if not os.path.exists(f'{current_directory}/BACKUP'):
     os.mkdir(f'{current_directory}/BACKUP')
+ 
     
+def move_sp2dp(source_path,destination_path):
+     items = os.listdir(source_path)
+     if items!=[]:
+        for item in items:
+           source_item_path = os.path.join(source_path, item)
+           destination_item_path = os.path.join(destination_path, item)
+           shutil.move(source_item_path, destination_item_path)
+        
 def refresh_backup_list():
     global list_backup
     list_backup = ['null']
@@ -319,7 +328,7 @@ if __name__ == "__main__":
         
         作者：bilibili@数列解析几何一生之敌
         
-        适用于整合包版本V1.1.1
+        适用于整合包版本V1.1.1(1.0需要修改代码或者下载、更新对应组件才能兼容)
                     
         WebUI更新日期：2023.10.12  
         """)
