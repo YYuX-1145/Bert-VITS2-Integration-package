@@ -37,6 +37,8 @@ def get_status():
 get_status()
 
 def p0_write_yml(name,val_per_spk,max_val_total,num_processes):
+    if name=='null'or name=='':
+        return '请选择！'
     config_path=os.path.join('Data',name,'config.yml')
     config_yml = yaml.load(open(config_path),Loader=yaml.FullLoader)
     config_yml["preprocess_text"]["val_per_spk"] = int(val_per_spk)
