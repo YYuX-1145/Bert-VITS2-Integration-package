@@ -360,6 +360,7 @@ if __name__ == "__main__":
                 with gr.TabItem("配置文件添加版本号"):
                     gr.Markdown(value='旧版本模型的配置文件添加版本号后方可在2.0版本下使用兼容推理')
                     gr.Markdown(value='按文件结构把配置文件和模型放到对应位置，然后开始操作。')
+                    gr.Markdown(value='使用1.1和1.1.1版兼容推理需要安装上一个版本使用的日语bert。')
                     gr.Markdown(value='可选版本为1.0.1,1.1和1.1.1。旧整合包版本为1.0.1或1.1.1。')
                     project_name3 = gr.Dropdown(label="选择实验名", choices=list_project, value='null'if not list_project else list_project[0],interactive=True)
                     with gr.Row():
