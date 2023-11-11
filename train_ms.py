@@ -62,6 +62,10 @@ def run():
         init_method="env://",  # If Windows,switch to gloo backend.
     )  # Use torchrun instead of mp.spawn
     rank = dist.get_rank()
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '65280'
+    os.environ['WORLD_SIZE'] = '1'
+    os.environ['LOCAL_RANK'] = '0'
     local_rank = int(os.environ["LOCAL_RANK"])
     n_gpus = dist.get_world_size()
 
@@ -119,16 +123,8 @@ def run():
         shuffle=True,
     )
     collate_fn = TextAudioSpeakerCollate()
-    train_loader = DataLoader(
-        train_dataset,
-        num_workers=16,
-        shuffle=False,
-        pin_memory=True,
-        collate_fn=collate_fn,
-        batch_sampler=train_sampler,
-        persistent_workers=True,
-        prefetch_factor=4,
-    )  # DataLoader config could be adjusted.
+    train_loader = DataLoader(train_dataset, num_workers=2, shuffle=False, pin_memory=True,
+                              collate_fn=collate_fn, batch_sampler=train_sampler)  # DataLoader config could be adjusted.
     if rank == 0:
         eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data)
         eval_loader = DataLoader(

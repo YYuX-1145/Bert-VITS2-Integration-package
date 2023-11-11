@@ -1,0 +1,47 @@
+V2.0.2
+
+环境维护和升级（示例）：
+%PYTHON% -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
+#看不懂的不要执行这条命令。
+
+0.安装ffmpeg：
+%PYTHON% setup_ffmpeg.py
+#执行一次即可。安装是把当前文件夹下ffmpeg加入环境变量，因此执行完不要移动或删除。否则需要手动更改环境变量。安装完可能需要重启才能生效。
+
+首先需要创建或更改全局设置。
+
+1.数据集重采样和标注：
+a.whisper通用标注：音频在2-10s。根据显存选择配置，large需要12G显存。
+%PYTHON% short_audio_transcribe.py --languages "CJE" --whisper_size large
+%PYTHON% short_audio_transcribe.py --languages "CJE" --whisper_size medium
+%PYTHON% short_audio_transcribe.py --languages "CJE" --whisper_size small
+#请按说话人分文件夹。
+#下载太慢或者失败，手动安装方法见github。
+
+b.下载的已标注的原神数据集：
+%PYTHON% transcribe_genshin.py
+#请按提示输入对应字母来选择语言。
+
+2.文本处理：
+%PYTHON% preprocess_text.py
+#1.1版本生成的cleaned文件请删除重新生成。
+
+3.bert_gen
+%PYTHON% bert_gen.py
+#生成bert文件
+
+4.训练：
+#请先修改训练配置（位于Data/<实验名>/configs.json）
+
+首次训练：
+%PYTHON% train_ms.py 
+
+继续训练把全局变量skip改为false
+
+启动TensorBoard：
+%PYTHON% -m tensorboard.main --logdir=Data/<实验名>/models
+#看不懂不要管它
+
+5.推理：
+%PYTHON% webui.py -m ./logs\OUTPUT_MODEL\G_100.pth
+#参数：--c 可选，指定配置文件路径  --m为模型指定路径

@@ -1,7 +1,7 @@
 # flake8: noqa: E402
 import os
 import logging
-
+import argparse
 import re_matching
 from tools.sentence import split_by_language, sentence_split
 
@@ -204,11 +204,22 @@ if __name__ == "__main__":
     if config.webui_config.debug:
         logger.info("Enable DEBUG-LEVEL log")
         logging.basicConfig(level=logging.DEBUG)
-    hps = utils.get_hparams_from_file(config.webui_config.config_path)
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-m", "--model", default=config.webui_config.model, help="path of your model"
+    )
+    parser.add_argument(
+        "-c",
+        "--config",
+        default=config.webui_config.config_path,
+        help="path of your config file",
+    )
+    args = parser.parse_args()
+    hps = utils.get_hparams_from_file(args.config)        
     # 若config.json中未指定版本则默认为最新版本
     version = hps.version if hasattr(hps, "version") else latest_version
     net_g = get_net_g(
-        model_path=config.webui_config.model, version=version, device=device, hps=hps
+        model_path=args.model, version=version, device=device, hps=hps
     )
     speaker_ids = hps.data.spk2id
     speakers = list(speaker_ids.keys())
@@ -229,7 +240,6 @@ if __name__ == "__main__":
                     """,
                 )
                 trans = gr.Button("中翻日", variant="primary")
-                slicer = gr.Button("快速切分", variant="primary")
                 speaker = gr.Dropdown(
                     choices=speakers, value=speakers[0], label="选择说话人"
                 )
