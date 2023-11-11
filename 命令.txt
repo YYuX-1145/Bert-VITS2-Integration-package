@@ -36,7 +36,7 @@ b.下载的已标注的原神数据集：
 首次训练：
 %PYTHON% train_ms.py 
 
-继续训练把全局变量skip改为false
+继续训练把config.json里的skip_optimizer改为false
 
 启动TensorBoard：
 %PYTHON% -m tensorboard.main --logdir=Data/<实验名>/models
