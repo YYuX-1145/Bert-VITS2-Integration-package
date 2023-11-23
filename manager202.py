@@ -1,15 +1,16 @@
+from multiprocessing import Value
 import shutil
 import gradio as gr
 import os
 import webbrowser
 import subprocess
-import datetime
+#import datetime
 import json
-import requests
-import soundfile as sf
+#import requests
+#import soundfile as sf
 import numpy as np
 import yaml
-from config import config
+#from config import config
 
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
@@ -29,8 +30,11 @@ current_yml=None
 def get_status():
     global current_yml
     try:
+        cfg = yaml.load(open('config.yml'),Loader=yaml.FullLoader)
+        current_yml='当前的训练： '+os.path.basename(cfg["dataset_path"])+"\n\n以下是配置文件内容：\n\n"
         with open('config.yml', mode="r", encoding="utf-8") as f:
-            current_yml=f.read()
+            current_y=f.read()
+            current_yml+=current_y
     except Exception as error:
         current_yml=error
 
@@ -88,7 +92,8 @@ def p0_mkdir(name):
          with open(os.path.join(path,"config.yml"), 'w', encoding='utf-8') as f:
             yaml.dump(cfg_yml, f) 
          os.startfile(path)
-         return 'Success. 已经自动打开了创建好的文件夹。请将音频按说话人分文件夹放入custom_character_voice内。然后进行下一步操作。'
+         refresh_project_list()
+         return project_name.update(choices=list_project,value=name),'Success. 已经自动打开了创建好的文件夹。请将音频按说话人分文件夹放入custom_character_voice内。然后进行下一步操作。'
        except Exception as error:
          return error   
     else:
@@ -281,7 +286,7 @@ if __name__ == "__main__":
         适用于整合包版本V2.0.2,不兼容之前的版本。
                     
         WebUI更新日期：2023.11.11
-        """)
+        """) 
         with gr.Tabs():
            with gr.TabItem("1.创建实验文件夹和加载全局配置"):
                with gr.Row(): 
@@ -309,6 +314,7 @@ if __name__ == "__main__":
 
 
                    with gr.Column():
+                       #p0_current_proj=gr.Textbox(label="当前生效的训练",value="",interactive=False)
                        p0_status=gr.TextArea(label="训练前请确认当前的全局配置信息", value=current_yml,interactive=False)
 
            with gr.TabItem("2.训练"):
@@ -384,6 +390,7 @@ if __name__ == "__main__":
         p0_mkdir_btn.click(p0_mkdir,
                            inputs=[p0_mkdir_name],
                            outputs=[
+                               project_name,
                 p0_mkdir_output_text,
             ],)
         p0_load_cfg_btn.click(p0_load_cfg,
