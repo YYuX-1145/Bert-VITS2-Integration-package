@@ -216,7 +216,7 @@ def refresh_models_in_logs():
       return (models_logs.update(choices=ckpt_list),"已刷新下拉列表")
    except Exception as error:
       return(models_logs.update(choices=['null']),f"读取失败 {error}")
-'''
+
 
 def c1_infer(file_name):
     if file_name=='null':
@@ -227,7 +227,7 @@ def c1_infer(file_name):
     return '新的命令行窗口已经打开，请关注输出信息。关闭窗口结束推理服务。'
 
 #backup_ckpt_list=['null']
-
+'''
 
 def c2_refresh_sub_opt(name):  
    try:
@@ -250,6 +250,26 @@ def c2_infer(proj_name,model_name):
     print(command+'\n\n')
     subprocess.Popen(['start', 'cmd', '/k', command],cwd=current_directory,shell=True)
     return '新的命令行窗口已经打开，请关注输出信息。关闭窗口结束推理服务。'
+
+def c2_infer_2(proj_name,model_name):
+    y=yaml.load(open('config.yml'),Loader=yaml.FullLoader)
+    if proj_name=='null' or model_name=='null':
+        try:
+           y["server"]["models"].clear()
+        except:
+            pass
+        y["server"]["models"]=[]
+    else:
+        try:
+            y["server"]["models"].clear()
+        except:
+            pass
+        y["server"]["models"]=[]
+        y["server"]["models"].append({"config":os.path.join('Data',proj_name,'config.json'),"device":'cuda',"language": 'ZH',"model":os.path.join('Data',proj_name,'models',model_name),"speakers":[]})
+    with open("config.yml", 'w', encoding='utf-8') as f:
+        yaml.dump(y, f) 
+    subprocess.Popen(['start', 'cmd', '/k','venv\python.exe server_fastapi.py'],cwd=current_directory,shell=True)
+    return '已经修改了全局配置文件。新的命令行窗口已经打开，请关注输出信息。关闭窗口结束推理服务。'
 
 def write_version(name,version,cont):
     if name=='null':
@@ -358,7 +378,8 @@ if __name__ == "__main__":
                     project_name2 = gr.Dropdown(label="选择实验名", choices=list_project, value='null',interactive=True)
                     models_in_project = gr.Dropdown(label="选择模型", choices=ckpt_list, value='null'if not ckpt_list else ckpt_list[0],interactive=True)
                     with gr.Column():
-                       c2_btn = gr.Button(value="启动推理", variant="primary")
+                       c2_btn = gr.Button(value="启动推理(Gr WebUI)", variant="primary")
+                       c2_btn2 = gr.Button(value="启动推理(Hiyori UI)", variant="primary")
                        c2_btn_refresh=gr.Button(value="刷新选项", variant="secondary")
                 with gr.Column():
                        c2_textbox_output_text = gr.Textbox(label="输出信息", placeholder="点击处理按钮",interactive=False) 
@@ -490,7 +511,14 @@ if __name__ == "__main__":
             outputs=[
                 c2_textbox_output_text,
             ],
-        )          
+        )
+        c2_btn2.click(
+            c2_infer_2,
+            inputs=[project_name2,models_in_project],
+            outputs=[
+                c2_textbox_output_text,
+            ],
+        )            
         c2_btn_refresh.click(refresh_project_list,[],[project_name,project_name2,project_name3,c2_textbox_output_text])
         write_ver_refresh_btn.click(refresh_project_list,[],[project_name,project_name2,project_name3,write_ver_textbox])
         write_ver_btn.click(
