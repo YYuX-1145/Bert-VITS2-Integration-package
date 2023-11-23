@@ -1,4 +1,3 @@
-from multiprocessing import Value
 import shutil
 import gradio as gr
 import os
@@ -285,7 +284,7 @@ if __name__ == "__main__":
         
         适用于整合包版本V2.0.2,不兼容之前的版本。
                     
-        WebUI更新日期：2023.11.11
+        WebUI更新日期：2023.11.23
         """) 
         with gr.Tabs():
            with gr.TabItem("1.创建实验文件夹和加载全局配置"):
