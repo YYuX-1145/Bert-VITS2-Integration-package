@@ -254,16 +254,8 @@ def c2_infer(proj_name,model_name):
 def c2_infer_2(proj_name,model_name):
     y=yaml.load(open('config.yml'),Loader=yaml.FullLoader)
     if proj_name=='null' or model_name=='null':
-        try:
-           y["server"]["models"].clear()
-        except:
-            pass
         y["server"]["models"]=[]
     else:
-        try:
-            y["server"]["models"].clear()
-        except:
-            pass
         y["server"]["models"]=[]
         y["server"]["models"].append({"config":os.path.join('Data',proj_name,'config.json'),"device":'cuda',"language": 'ZH',"model":os.path.join('Data',proj_name,'models',model_name),"speakers":[]})
     with open("config.yml", 'w', encoding='utf-8') as f:
