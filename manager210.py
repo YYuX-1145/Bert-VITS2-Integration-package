@@ -9,7 +9,7 @@ import json
 #import soundfile as sf
 #import numpy as np
 import yaml
-import librosa
+#import librosa
 #from config import config
 
 
@@ -26,19 +26,21 @@ except Exception as e:
 
 class_info={}
 emo_speaker_list=[]
-emo_content_list=[]
 emo_class_list=[]
 emo_file_name_list=[]
 emo_audio_list=[]
 emo_tr_list=[]
 emo_checkbox_list=[]
+emo_current_proj_name=None
 def load_emo_clu(proj_name):
+    global emo_current_proj_name
     global class_info
     global emo_speaker_list
+    emo_current_proj_name=proj_name
     try:
         class_info = yaml.load(open(os.path.join('Data',proj_name,'emo_clustering.yml')),Loader=yaml.FullLoader)
         emo_speaker_list=list(class_info.keys())
-        return emo_status_text.update(value=f"当前的实验：{proj_name}"),emo_speaker.update(choices=emo_speaker_list,value=emo_speaker_list[0]),*load_emo_content(proj_name,emo_speaker_list[0],list(class_info[emo_speaker_list[0]].keys())[0])
+        return emo_status_text.update(value=f"当前的实验：{proj_name}"),emo_speaker.update(choices=emo_speaker_list,value=emo_speaker_list[0]),*emo_change_speaker(emo_speaker_list[0])#,*load_page(emo_speaker_list[0],list(class_info[emo_speaker_list[0]].keys())[0])
     except Exception as e:
         class_info={}
         emo_speaker_list=[]
@@ -51,39 +53,56 @@ def get_transcription(proj_name,spk,wav):#transciption and wav path
     with open(list_path, mode="r", encoding="utf-8", errors='ignore') as f:
         for lines in f:
             if os.path.normpath(lines.split("|")[0])==wav_path:
-                return lines.split("|")[4],wav_path
+                return lines.split("|")[3],wav_path
 
 
-def load_emo_content(proj_name,speaker,class_name):#load content of the chosen class and use functions to update ui.
-    global class_info
-    global emo_content_list
-    #y=yaml.load(open(os.path.join('Data',proj_name,'config.yml')),Loader=yaml.FullLoader)
-    emo_content_list=class_info[speaker][class_name]
-    return load_page(proj_name,speaker)
-
-def load_page(proj_name,spk):
+def emo_change_speaker(speaker): 
+    lst=list(class_info[speaker].keys())
+    return emo_chosen_class.update(choices=lst,value=lst[0]),*load_page(speaker,lst[0])
+'''
+def emo_change_class(speaker,chosen_class):
+    global emo_current_proj_name
+    return *load_page(emo_current_proj_name,speaker,chosen_class)
+'''
+def load_page(spk,class_name):
+    global emo_current_proj_name
     wavname_list=[]
     transcription_list=[]
     audio_list=[]
     checkbox_list=[]
-    current_page,_,_=calculate_page()
-    for i,wav_name in enumerate(current_page):
-        tr,wavpath=get_transcription(proj_name,spk,wav_name)
+    page_start,page_end,_,_=calculate_page(spk,class_name)
+    for i in range(page_start, page_end+1):
+        wav_name=class_info[spk][class_name][i]
+        tr,wavpath=get_transcription(emo_current_proj_name,spk,wav_name)
         wavname_list.append(gr.Textbox().update(value=wav_name,label=i))
         audio_list.append(gr.Audio.update(label="情感参考音频",value=wavpath,interactive=False,visible=True))
         transcription_list.append(gr.Textbox().update(value=tr))
         checkbox_list.append(gr.Checkbox().update(value=False))
-    length=len(current_page)
+    length=page_end-page_start
     if length<10:
-        for i in range(10-length):
-            wavname_list.append(gr.Textbox().update(value=None,label=''))
+        for i in range(9-length):
+            wavname_list.append(gr.Textbox().update(value=None,label='None'))
             audio_list.append(gr.Audio.update(label="情感参考音频",value=None,interactive=False,visible=True))
             transcription_list.append(gr.Textbox().update(value=None))
             checkbox_list.append(gr.Checkbox().update(value=False))
     list_all=wavname_list+transcription_list+audio_list+checkbox_list
     return list_all
 
+current_page=1
 
+def calculate_page(speaker,class_name):
+    global current_page
+    length=len(class_info[speaker][class_name])
+    if length<=10 and current_page==1:
+        return 0,length-1,False,False#range,left,right
+    else:
+        end=11*(current_page-1)
+        if end > length-1:
+           end=length-1
+           return 10*(current_page-1),end,True,False
+        else:
+           return 10*(current_page-1),end,True,True
+        
 current_yml=None
 def get_status():
     global current_yml
@@ -352,21 +371,7 @@ def write_version(name,version,cont):
     except Exception as e:
        return opt_continue.update(value=False),e
 
-current_page=1
 
-def calculate_page():
-    global current_page
-    global emo_content_list
-    length=len(emo_content_list)
-    if length<=10 and current_page==1:
-        return emo_content_list,False,False#left,right
-    else:
-        end=11*current_page-1 
-        if end > length:
-           end=length
-           return emo_content_list[(10*current_page-1):end:],True,False
-        else:
-           return emo_content_list[(10*current_page-1):end:],True,True
 
 
 
@@ -475,20 +480,23 @@ if __name__ == "__main__":
                     with gr.Column():
                         with gr.Row():
                             emo_speaker=gr.Dropdown(label='选择说话人',choices=emo_speaker_list,interactive=True)
+                            emo_chosen_class=gr.Dropdown(label='选择类别',choices=emo_class_list,value='null'if not emo_class_list else emo_class_list[0],interactive=True)
                             emo_write_btn=gr.Button(value="写入", variant="primary")
-                            emo_unload_btn=gr.Button(value="卸载当前配置", variant="secondary")
+                            emo_unload_btn=gr.Button(value="卸载当前配置", variant="secondary")                            
+                        
                         with gr.Accordion("编辑区域"):
-                            with gr.Row():
-                                emo_chosen_class=gr.Dropdown(label='选择类别',choices=emo_class_list,value='null'if not emo_class_list else emo_class_list[0],interactive=True)
-                                emo_enter_rename=gr.Textbox(placeholder="输入重命名")
-                                emo_enter_rename_btn=gr.Button(value="重命名", variant="primary")
-                                emo_del_btn=gr.Button(value="删除此类别", variant="primary")
+                            with gr.Row():                                
+                                emo_enter_rename=gr.Textbox(label="重命名",placeholder="在此输入重命名，然后点击重命名按钮")
+                                emo_enter_rename_btn=gr.Button(value="重命名类别", variant="primary")
+                                emo_del_class_btn=gr.Button(value="删除此类别", variant="primary")
+                                emo_del_wav_btn=gr.Button(value="删除所选", variant="primary")
+                                emo_invert_selection_btn=gr.Button(value="反向选择", variant="primary")
                         for i in range(10):
                             with gr.Row():
-                                emo_file_name=gr.Textbox(label="文件名",value=None,interactive=False)
-                                emo_tr=gr.Textbox(label="文本",value=None,interactive=False)
-                                emo_wav=gr.Audio(label="情感参考音频",value=None,interactive=False,visible=True)
-                                emo_checkbox=gr.Checkbox(value=False)
+                                emo_file_name=gr.Textbox(label="文件名",value=None,interactive=False,scale=4)
+                                emo_tr=gr.Textbox(label="文本",value=None,interactive=False,scale=5)
+                                emo_wav=gr.Audio(label="情感参考音频",value=None,interactive=False,visible=True,scale=5)
+                                emo_checkbox=gr.Checkbox(value=False,scale=1)
                                 emo_tr_list.append(emo_tr)
                                 emo_file_name_list.append(emo_file_name)
                                 emo_audio_list.append(emo_wav)
@@ -497,7 +505,8 @@ if __name__ == "__main__":
                             revious_btn=gr.Button(value="<-前一页", variant="secondary",interactive=False)
                             page_text=gr.Number(value=current_page,interactive=False)
                             next_btn=gr.Button(value="后一页->", variant="primary",interactive=False)
-                #
+                        emo_speaker.change(emo_change_speaker,[emo_speaker],[emo_chosen_class,*emo_file_name_list,*emo_tr_list,*emo_audio_list,*emo_checkbox_list])
+                        emo_chosen_class.change(load_page,[emo_speaker,emo_chosen_class],[*emo_file_name_list,*emo_tr_list,*emo_audio_list,*emo_checkbox_list])
                 with gr.TabItem("配置文件添加版本号"):
                     gr.Markdown(value='旧版本模型的配置文件添加版本号后方可在2.0版本下使用兼容推理')
                     gr.Markdown(value='按文件结构把配置文件和模型放到对应位置，然后开始操作。')
@@ -657,7 +666,7 @@ if __name__ == "__main__":
                 write_ver_textbox,
             ],
         ) 
-        emo_proj_load_btn.click(load_emo_clu,inputs=[project_name4],outputs=[emo_status_text,emo_speaker,*emo_file_name_list,*emo_tr_list,*emo_audio_list,*emo_checkbox_list])
+        emo_proj_load_btn.click(load_emo_clu,inputs=[project_name4],outputs=[emo_status_text,emo_speaker,emo_chosen_class,*emo_file_name_list,*emo_tr_list,*emo_audio_list,*emo_checkbox_list])
         
 webbrowser.open("http://127.0.0.1:6660")
 app.launch(server_port=6660)
