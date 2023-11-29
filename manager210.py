@@ -17,13 +17,14 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 if not os.path.exists('./Data'):
     os.mkdir('./Data')
  
-
+################### load md
 try:
    with open('file_structure.md', mode="r", encoding="utf-8") as f:
        file_structure_md=f.read()
 except Exception as e:
     file_structure_md='读取错误'+ str(e)
-
+###################
+current_page=1
 class_info={}
 emo_speaker_list=[]
 emo_class_list=[]
@@ -44,7 +45,7 @@ def load_emo_clu(proj_name):
     except Exception as e:
         class_info={}
         emo_speaker_list=[]
-        return emo_status_text.update(value='加载错误'+str(e)),emo_speaker.update(choices=emo_speaker_list,value=""),*None
+        return emo_status_text.update(value='加载错误'+str(e)),None,None,*emo_ret_none()
 
 def get_transcription(proj_name,spk,wav):#transciption and wav path
     y=yaml.load(open(os.path.join('Data',proj_name,'config.yml')),Loader=yaml.FullLoader)
@@ -57,52 +58,118 @@ def get_transcription(proj_name,spk,wav):#transciption and wav path
 
 
 def emo_change_speaker(speaker): 
+    global current_page
+    current_page=1
     lst=list(class_info[speaker].keys())
-    return emo_chosen_class.update(choices=lst,value=lst[0]),*load_page(speaker,lst[0])
-'''
-def emo_change_class(speaker,chosen_class):
-    global emo_current_proj_name
-    return *load_page(emo_current_proj_name,speaker,chosen_class)
-'''
-def load_page(spk,class_name):
+    return emo_chosen_class.update(choices=lst,value=lst[0]),*switch_page(speaker,lst[0])
+
+def emo_change_class(speaker,class_):
+    global current_page
+    current_page=1
+    return switch_page(speaker,class_)
+
+def emo_ret_none():
+    global current_page
+    wavname_list=[]
+    transcription_list=[]
+    audio_list=[]
+    checkbox_list=[]
+    for i in range(10):
+        wavname_list.append(gr.Textbox().update(value=None,label='None',visible=False))
+        audio_list.append(gr.Audio.update(label="情感参考音频",value=None,interactive=False,visible=False))
+        transcription_list.append(gr.Textbox().update(value=None,visible=False))
+        checkbox_list.append(gr.Checkbox().update(value=False,visible=False))
+    wavname_list[0]=gr.Textbox().update(value='看起来列表似乎是空的',label='None',visible=True)
+    list_all=wavname_list+transcription_list+audio_list+checkbox_list
+    return *list_all,previous_btn.update(interactive=False),emo_page_index.update(value=current_page),next_btn.update(interactive=False)
+
+def load_page(page_start,page_end,spk,class_name):#load lines of content
     global emo_current_proj_name
     wavname_list=[]
     transcription_list=[]
     audio_list=[]
     checkbox_list=[]
-    page_start,page_end,_,_=calculate_page(spk,class_name)
+    #page_start,page_end,_,_=calculate_page(spk,class_name)
     for i in range(page_start, page_end+1):
         wav_name=class_info[spk][class_name][i]
         tr,wavpath=get_transcription(emo_current_proj_name,spk,wav_name)
-        wavname_list.append(gr.Textbox().update(value=wav_name,label=i))
+        wavname_list.append(gr.Textbox().update(value=wav_name,label=i,visible=True))
         audio_list.append(gr.Audio.update(label="情感参考音频",value=wavpath,interactive=False,visible=True))
-        transcription_list.append(gr.Textbox().update(value=tr))
-        checkbox_list.append(gr.Checkbox().update(value=False))
+        transcription_list.append(gr.Textbox().update(value=tr,visible=True))
+        checkbox_list.append(gr.Checkbox().update(value=False,visible=True))
     length=page_end-page_start
     if length<10:
         for i in range(9-length):
-            wavname_list.append(gr.Textbox().update(value=None,label='None'))
-            audio_list.append(gr.Audio.update(label="情感参考音频",value=None,interactive=False,visible=True))
-            transcription_list.append(gr.Textbox().update(value=None))
-            checkbox_list.append(gr.Checkbox().update(value=False))
+            wavname_list.append(gr.Textbox().update(value=None,label='None',visible=False))
+            audio_list.append(gr.Audio.update(label="情感参考音频",value=None,interactive=False,visible=False))
+            transcription_list.append(gr.Textbox().update(value=None,visible=False))
+            checkbox_list.append(gr.Checkbox().update(value=False,visible=False))
     list_all=wavname_list+transcription_list+audio_list+checkbox_list
     return list_all
 
-current_page=1
-
-def calculate_page(speaker,class_name):
+def calculate_page(length):#calculate the index and return
     global current_page
-    length=len(class_info[speaker][class_name])
     if length<=10 and current_page==1:
         return 0,length-1,False,False#range,left,right
     else:
-        end=11*(current_page-1)
-        if end > length-1:
+        end=10*current_page-1
+        if end > length-1:#num<10
            end=length-1
            return 10*(current_page-1),end,True,False
-        else:
+        else:#full
+           if current_page==1:
+              return 10*(current_page-1),end,False,True 
            return 10*(current_page-1),end,True,True
-        
+
+def switch_page(speaker,class_name):#switch to the specified page or adjust page index , then load page.
+    global current_page
+    global class_info
+    if current_page<1:
+        current_page=1
+    length=len(class_info[speaker][class_name])
+    if length==0:
+        return emo_ret_none()
+    if current_page>1 and (current_page-1)*10>=length:#e.g [0-9],page==2-> [10] -> out of range
+        current_page-=1
+    #print(length)
+    page_start,page_end,left,right=calculate_page(length)
+    #print(page_start,page_end)
+    return *load_page(page_start,page_end,speaker,class_name),previous_btn.update(interactive=left),emo_page_index.update(value=current_page),next_btn.update(interactive=right)
+
+def reverse_selection(*checkbox_list):
+    rt_list = [not i if i is True else True for i in checkbox_list]
+    return rt_list
+
+def del_wav_in_class(speaker,class_name,*checkbox_list):
+    length=len(class_info[speaker][class_name])
+    page_start,page_end,_,_=calculate_page(length)
+    id=0
+    checkbox_list=list(checkbox_list)
+    for i in range(page_start, page_end+1):
+        if checkbox_list[id]:
+            class_info[speaker][class_name][id]=None
+        id+=1
+    while None in class_info[speaker][class_name]:
+        class_info[speaker][class_name].remove(None)
+    return switch_page(speaker,class_name)
+
+def del_rename_class(speaker,class_,new_name=None):
+    global class_info
+    global current_page
+    if new_name is not None:
+        if new_name in class_info[speaker]:
+            return emo_chosen_class.update(value=new_name,choices=list(class_info[speaker].keys())),gr.Textbox().update(placeholder='重名了！',value=None)
+        class_info[speaker][new_name]=class_info[speaker][class_]
+        del class_info[speaker][class_]
+        return emo_chosen_class.update(value=new_name,choices=list(class_info[speaker].keys())),gr.Textbox().update(placeholder='输入重命名',value=None)
+    else:
+        del class_info[speaker][class_]
+        lst=list(class_info[speaker].keys())
+        current_page=0
+        return emo_chosen_class.update(choices=lst,value=lst[0])      
+
+
+
 current_yml=None
 def get_status():
     global current_yml
@@ -283,41 +350,8 @@ def start_tb():
      print(command+'\n\n')
      subprocess.Popen(['start', 'cmd', '/k', command],cwd=current_directory,shell=True)
      return '新的命令行窗口已经打开，请关注输出信息。'
+
 ckpt_list = ['null']
-'''
-
-try:
-   file_list = os.listdir(f'{current_directory}/logs/OUTPUT_MODEL')
-   for ck in file_list:
-      if os.path.splitext(ck)[-1] == ".pth"and ck[:2] != "D_" and ck[:4] !="DUR_":
-         ckpt_list.append(ck)
-except Exception as error:
-    print("Attention. An error occurred in reading {./logs/OUTPUT_MODEL}.Check if the directory exists.")
-    print(error)
-
-def refresh_models_in_logs():
-   try:
-      file_list = os.listdir(os.path.join(config.dataset_path,config.train_ms_config.model))
-      global ckpt_list
-      ckpt_list = ['null']
-      for ck in file_list:
-         if os.path.splitext(ck)[-1] == ".pth"and ck[:2] == "G_":
-            ckpt_list.append(ck)
-      return (models_logs.update(choices=ckpt_list),"已刷新下拉列表")
-   except Exception as error:
-      return(models_logs.update(choices=['null']),f"读取失败 {error}")
-
-
-def c1_infer(file_name):
-    if file_name=='null':
-        return "请选择模型！"    
-    command = f'venv\python.exe webui.py -c ./logs/OUTPUT_MODEL/config.json -m ./logs/OUTPUT_MODEL/{file_name}'
-    print(command+'\n\n')
-    subprocess.Popen(['start', 'cmd', '/k', command],cwd=current_directory,shell=True)
-    return '新的命令行窗口已经打开，请关注输出信息。关闭窗口结束推理服务。'
-
-#backup_ckpt_list=['null']
-'''
 
 def c2_refresh_sub_opt(name):  
    try:
@@ -371,9 +405,24 @@ def write_version(name,version,cont):
     except Exception as e:
        return opt_continue.update(value=False),e
 
+def switch_previous_page(speaker,class_name):
+    global current_page
+    current_page-=1
+    return switch_page(speaker,class_name)
+def switch_next_page(speaker,class_name):
+    global current_page
+    current_page+=1
+    return switch_page(speaker,class_name)
 
-
-
+def emo_write(proj_name):
+    global class_info
+    try:
+        with open(os.path.join('Data',proj_name,'emo_clustering.yml'), 'w', encoding='utf-8') as f:
+            yaml.dump(class_info, f) 
+        return 'Success'
+    except Exception as e:
+        return '写入出错'+str(e)
+   
 
 if __name__ == "__main__":
     with gr.Blocks(title="Bert-VITS-2-Manager-WebUI-202") as app:
@@ -482,31 +531,39 @@ if __name__ == "__main__":
                             emo_speaker=gr.Dropdown(label='选择说话人',choices=emo_speaker_list,interactive=True)
                             emo_chosen_class=gr.Dropdown(label='选择类别',choices=emo_class_list,value='null'if not emo_class_list else emo_class_list[0],interactive=True)
                             emo_write_btn=gr.Button(value="写入", variant="primary")
-                            emo_unload_btn=gr.Button(value="卸载当前配置", variant="secondary")                            
-                        
+                    
                         with gr.Accordion("编辑区域"):
                             with gr.Row():                                
-                                emo_enter_rename=gr.Textbox(label="重命名",placeholder="在此输入重命名，然后点击重命名按钮")
-                                emo_enter_rename_btn=gr.Button(value="重命名类别", variant="primary")
-                                emo_del_class_btn=gr.Button(value="删除此类别", variant="primary")
-                                emo_del_wav_btn=gr.Button(value="删除所选", variant="primary")
-                                emo_invert_selection_btn=gr.Button(value="反向选择", variant="primary")
-                        for i in range(10):
+                                emo_enter_rename=gr.Textbox(label="重命名",placeholder="在此输入重命名，然后点击重命名按钮",scale=2)
+                                emo_enter_rename_btn=gr.Button(value="重命名类别", variant="primary",scale=1)
+                                emo_del_class_btn=gr.Button(value="删除此类别", variant="primary",scale=1)
+                                emo_del_wav_btn=gr.Button(value="删除所选", variant="primary",scale=1)
+                                emo_reverse_selection_btn=gr.Button(value="反向选择", variant="primary",scale=1)
+                        with gr.Row():
+                                emo_file_name=gr.Textbox(label="文件名",value='空列表',interactive=False,scale=4)
+                                emo_tr=gr.Textbox(label="文本",value=None,interactive=False,scale=5,visible=False)
+                                emo_wav=gr.Audio(label="情感参考音频",value=None,interactive=False,visible=False,scale=5)
+                                emo_checkbox=gr.Checkbox(label='选择',value=False,scale=1,visible=False)
+                                emo_tr_list.append(emo_tr)
+                                emo_file_name_list.append(emo_file_name)
+                                emo_audio_list.append(emo_wav)
+                                emo_checkbox_list.append(emo_checkbox)
+                        for i in range(9):
                             with gr.Row():
-                                emo_file_name=gr.Textbox(label="文件名",value=None,interactive=False,scale=4)
-                                emo_tr=gr.Textbox(label="文本",value=None,interactive=False,scale=5)
-                                emo_wav=gr.Audio(label="情感参考音频",value=None,interactive=False,visible=True,scale=5)
-                                emo_checkbox=gr.Checkbox(value=False,scale=1)
+                                emo_file_name=gr.Textbox(label="文件名",value=None,interactive=False,scale=4,visible=False)
+                                emo_tr=gr.Textbox(label="文本",value=None,interactive=False,scale=5,visible=False)
+                                emo_wav=gr.Audio(label="情感参考音频",value=None,interactive=False,visible=False,scale=5)
+                                emo_checkbox=gr.Checkbox(label='选择',value=False,scale=1,visible=False)
                                 emo_tr_list.append(emo_tr)
                                 emo_file_name_list.append(emo_file_name)
                                 emo_audio_list.append(emo_wav)
                                 emo_checkbox_list.append(emo_checkbox)
                         with gr.Row():
-                            revious_btn=gr.Button(value="<-前一页", variant="secondary",interactive=False)
-                            page_text=gr.Number(value=current_page,interactive=False)
-                            next_btn=gr.Button(value="后一页->", variant="primary",interactive=False)
-                        emo_speaker.change(emo_change_speaker,[emo_speaker],[emo_chosen_class,*emo_file_name_list,*emo_tr_list,*emo_audio_list,*emo_checkbox_list])
-                        emo_chosen_class.change(load_page,[emo_speaker,emo_chosen_class],[*emo_file_name_list,*emo_tr_list,*emo_audio_list,*emo_checkbox_list])
+                            previous_btn=gr.Button(value="<-上一页", variant="secondary",interactive=False,scale=5)
+                            emo_page_index=gr.Number(label='页码',value=current_page,interactive=False,scale=1)
+                            next_btn=gr.Button(value="下一页->", variant="primary",interactive=False,scale=5)
+                        emo_speaker.change(emo_change_speaker,[emo_speaker],[emo_chosen_class,*emo_file_name_list,*emo_tr_list,*emo_audio_list,*emo_checkbox_list,previous_btn,emo_page_index,next_btn])
+                        emo_chosen_class.change(emo_change_class,[emo_speaker,emo_chosen_class],[*emo_file_name_list,*emo_tr_list,*emo_audio_list,*emo_checkbox_list,previous_btn,emo_page_index,next_btn])
                 with gr.TabItem("配置文件添加版本号"):
                     gr.Markdown(value='旧版本模型的配置文件添加版本号后方可在2.0版本下使用兼容推理')
                     gr.Markdown(value='按文件结构把配置文件和模型放到对应位置，然后开始操作。')
@@ -616,33 +673,6 @@ if __name__ == "__main__":
                 tb_textbox_output_text,
             ],
         )
-        '''
-        b1_btn.click(
-            b1_move_in,
-            inputs=[textbox_backup_name],
-            outputs=[
-                b1_textbox_output_text,
-            ],
-        )            
-        b2_btn_load.click(
-            b2_move_out,
-            inputs=[models],
-            outputs=[
-                b2_textbox_output_text,
-            ],
-        )        
-        b2_btn_refresh.click(refresh_backup_list,[],[models,b2_textbox_output_text])
-        '''
-        '''
-        c1_btn.click(
-            c1_infer,
-            inputs=[models_logs],
-            outputs=[speaker,
-                c1_textbox_output_text
-            ],
-        )
-        c1_btn_refresh.click(refresh_models_in_logs,[],[models_logs,c1_textbox_output_text])
-        '''
         c2_btn.click(
             c2_infer,
             inputs=[project_name2,models_in_project],
@@ -666,7 +696,42 @@ if __name__ == "__main__":
                 write_ver_textbox,
             ],
         ) 
-        emo_proj_load_btn.click(load_emo_clu,inputs=[project_name4],outputs=[emo_status_text,emo_speaker,emo_chosen_class,*emo_file_name_list,*emo_tr_list,*emo_audio_list,*emo_checkbox_list])
-        
+        emo_proj_load_btn.click(load_emo_clu,inputs=[project_name4],outputs=[emo_status_text,emo_speaker,emo_chosen_class,*emo_file_name_list,*emo_tr_list,*emo_audio_list,*emo_checkbox_list,previous_btn,emo_page_index,next_btn])
+        #emo_del_class_btn.click()
+        emo_del_wav_btn.click(
+            del_wav_in_class,
+            inputs=[emo_speaker,emo_chosen_class,*emo_checkbox_list],
+            outputs=[*emo_file_name_list,*emo_tr_list,*emo_audio_list,*emo_checkbox_list,previous_btn,emo_page_index,next_btn]
+        )
+        emo_reverse_selection_btn.click(
+            reverse_selection,
+            inputs=[*emo_checkbox_list],
+            outputs=[*emo_checkbox_list]
+        )
+        emo_del_class_btn.click(
+            del_rename_class,
+            inputs=[emo_speaker,emo_chosen_class],
+            outputs=[emo_chosen_class]
+        )
+        emo_enter_rename_btn.click(
+            del_rename_class,
+            inputs=[emo_speaker,emo_chosen_class,emo_enter_rename],
+            outputs=[emo_chosen_class,emo_enter_rename]
+        )        
+        next_btn.click(
+            switch_next_page,
+            inputs=[emo_speaker,emo_chosen_class],
+            outputs=[*emo_file_name_list,*emo_tr_list,*emo_audio_list,*emo_checkbox_list,previous_btn,emo_page_index,next_btn]
+            )
+        previous_btn.click(
+            switch_previous_page,
+            inputs=[emo_speaker,emo_chosen_class],
+            outputs=[*emo_file_name_list,*emo_tr_list,*emo_audio_list,*emo_checkbox_list,previous_btn,emo_page_index,next_btn]
+            ) 
+        emo_write_btn.click(
+            emo_write,
+            inputs=[project_name4],
+            outputs=[emo_status_text]
+        )       
 webbrowser.open("http://127.0.0.1:6660")
 app.launch(server_port=6660)
