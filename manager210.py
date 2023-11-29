@@ -19,10 +19,20 @@ if not os.path.exists('./Data'):
  
 ################### load md
 try:
-   with open('file_structure.md', mode="r", encoding="utf-8") as f:
+   with open('docs/file_structure.md', mode="r", encoding="utf-8") as f:
        file_structure_md=f.read()
 except Exception as e:
     file_structure_md='读取错误'+ str(e)
+try:
+   with open('docs/README.md', mode="r", encoding="utf-8") as f:
+       readme_md=f.read()
+except Exception as e:
+    readme_md='读取错误'+ str(e)    
+try:
+   with open('docs/command_usage.md', mode="r", encoding="utf-8") as f:
+       cmd_md=f.read()
+except Exception as e:
+    cmd_md='读取错误'+ str(e)       
 ###################
 current_page=1
 class_info={}
@@ -184,7 +194,7 @@ def get_status():
 
 get_status()
 
-def p0_write_yml(name,val_per_spk,max_val_total,bert_num_processes,emo_num_processes,num_workers):
+def p0_write_yml(name,val_per_spk,max_val_total,bert_num_processes,emo_num_processes,num_workers,keep_ckpts):
     if name=='null'or name=='':
         return '请选择！'
     config_path=os.path.join('Data',name,'config.yml')
@@ -194,6 +204,7 @@ def p0_write_yml(name,val_per_spk,max_val_total,bert_num_processes,emo_num_proce
     config_yml["bert_gen"]["num_processes"] = int(bert_num_processes)
     config_yml["emo_gen"]["num_processes"] = int(emo_num_processes)
     config_yml["train_ms"]["num_workers"]=int(num_workers)
+    config_yml["train_ms"]["keep_ckpts"]=int(keep_ckpts)
     with open(config_path, 'w', encoding='utf-8') as f:
           yaml.dump(config_yml, f) 
     return 'Success'
@@ -433,9 +444,9 @@ if __name__ == "__main__":
         
         作者：bilibili@数列解析几何一生之敌
         
-        适用于整合包版本V2.0.2,不兼容之前的版本。
+        适用于整合包版本V2.1,不兼容之前的版本。
                     
-        WebUI更新日期：2023.11.23
+        WebUI更新日期：2023.11.30
         """) 
         with gr.Tabs():
            with gr.TabItem("1.创建实验文件夹和加载全局配置"):
@@ -458,6 +469,7 @@ if __name__ == "__main__":
                             p0_bg_t = gr.Number(label="bert_gen线程数", value="2",interactive=True)
                             p0_emo_t = gr.Number(label="emo_gen线程数", value="2",interactive=True)
                             p0_dataloader = gr.Number(label="data_loader数量", value="4",interactive=True)
+                            p0_keep_ckpt = gr.Number(label="模型留存个数", value="4",interactive=True)
                        p0_load_cfg_output_text = gr.Textbox(label="输出信息", placeholder="点击处理按钮",interactive=False)
                        with gr.Row():
                           p0_write_cfg_btn=gr.Button(value="保存更改(但不会自动加载)", variant="primary")
@@ -578,12 +590,16 @@ if __name__ == "__main__":
                           write_ver_refresh_btn=gr.Button(value="刷新",variant="secondary")
                       with gr.Column():
                           write_ver_textbox=gr.Textbox(label="输出信息", placeholder="点击处理按钮",interactive=False)
-                with gr.TabItem("帮助"):
-                    with gr.TabItem("文件结构参考"):
-                         help=gr.Markdown(value=file_structure_md)
+           with gr.TabItem("关于&帮助"):
+                with gr.TabItem("项目简介"):            
+                    help=gr.Markdown(value=readme_md)
+                with gr.TabItem("训练流程和命令行使用"): 
+                    with gr.Row():                  
+                        help=gr.Markdown(value=cmd_md)                      
+                        help=gr.Markdown(value=file_structure_md)
 
         p0_write_cfg_btn.click(p0_write_yml,
-                           inputs=[project_name,p0_val_ps,p0_val_tt,p0_bg_t,p0_emo_t,p0_dataloader],
+                           inputs=[project_name,p0_val_ps,p0_val_tt,p0_bg_t,p0_emo_t,p0_dataloader,p0_keep_ckpt],
                            outputs=[
                 p0_load_cfg_output_text,
             ],)                
