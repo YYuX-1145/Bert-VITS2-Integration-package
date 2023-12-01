@@ -1,10 +1,28 @@
-<div align="center">
+# Bert-VITS2整合包
+# 注意：本整合包是免费且无条件提供下载的！整合包本体不得商用，不得二次分发。  
+## Bert-VITS2商业相关问题请咨询项目组（但我认为一般是不让商用的）
 
-<img alt="LOGO" src="https://cdn.jsdelivr.net/gh/fishaudio/fish-diffusion@main/images/logo_512x512.png" width="256" height="256" />
+## 功能：整合包加入了标注功能。新加的WebUI可以让训练更加轻松。
+
+## 下载链接和教程
+(1.0版教程)【【Bert-Vits2】带标注功能的整合包！轻松训练属于你的“神之嘴”！-哔哩哔哩】 https://b23.tv/Ir2OG5d   
+2.0版简介和教程：https://www.bilibili.com/read/cv27647393/  
+本仓库的代码是为了给自己部署不成功的，代码报错的人一些参考，或者是用于快速更新整合包。云端训练请自己结合原项目把相关文件和目录补齐。并且我不解答云训练相关问题。
+## References|参考
++ [cronrpc/SubFix](https://github.com/cronrpc/SubFix)（界面和功能）
++ [fishaudio/Bert-VITS2](https://github.com/fishaudio/Bert-VITS2)（代码）
++ [Plachtaa/VITS-fast-fine-tuning](https://github.com/Plachtaa/VITS-fast-fine-tuning)（代码）
+## 本整合包禁止在未经修改的情况下二次分发<br>（功能上经过修改和改进的版本应标注来源）
+
+## 严禁将此项目用于一切违反《中华人民共和国宪法》，《中华人民共和国刑法》，《中华人民共和国治安管理处罚法》和《中华人民共和国民法典》之用途。由使用本整合包产生的问题和作者、原作者无关！！！
+<br><br>
+
+# 以下为原项目的Readme：     
+
 
 # Bert-VITS2
 
-VITS2 Backbone with multilingual bert
+VITS2 Backbone with multipal-language bert
 ## 请注意，本项目核心思路来源于[anyvoiceai/MassTTS](https://github.com/anyvoiceai/MassTTS) 一个非常好的tts项目
 ## MassTTS的演示demo为[ai版峰哥锐评峰哥本人,并找回了在金三角失落的腰子](https://www.bilibili.com/video/BV1w24y1c7z9)
 
@@ -19,7 +37,6 @@ VITS2 Backbone with multilingual bert
 ### 严禁用于任何政治相关用途。
 #### Video:https://www.bilibili.com/video/BV1hp4y1K78E
 #### Demo:https://www.bilibili.com/video/BV1TF411k78w
-#### QQ Group：815818430
 ## References
 + [anyvoiceai/MassTTS](https://github.com/anyvoiceai/MassTTS)
 + [jaywalnut310/vits](https://github.com/jaywalnut310/vits)
