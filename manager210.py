@@ -3,21 +3,20 @@ import gradio as gr
 import os
 import webbrowser
 import subprocess
-#import datetime
 import json
-#import requests
-#import soundfile as sf
-#import numpy as np
 import yaml
-#import librosa
-#from config import config
+import argparse
+
+#########################################################
+py_dir=r"venv\python.exe" # SET PYTHON PATH HERE!
+#########################################################
 
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
 if not os.path.exists('./Data'):
     os.mkdir('./Data')
  
-################### load md
+################### Load md
 try:
    with open('docs/file_structure.md', mode="r", encoding="utf-8") as f:
        file_structure_md=f.read()
@@ -33,7 +32,18 @@ try:
        cmd_md=f.read()
 except Exception as e:
     cmd_md='读取错误'+ str(e)       
+try:
+   with open('docs/update_info.md', mode="r", encoding="utf-8") as f:
+       update_info=f.read()
+except Exception as e:
+    update_info='读取错误'+ str(e)       
+try:
+   with open('docs/errors.md', mode="r", encoding="utf-8") as f:
+       errors=f.read()
+except Exception as e:
+    errors='读取错误'+ str(e)    
 ###################
+
 current_page=1
 class_info={}
 emo_speaker_list=[]
@@ -44,18 +54,21 @@ emo_tr_list=[]
 emo_checkbox_list=[]
 emo_current_proj_name=None
 def load_emo_clu(proj_name):
+    if proj_name=="" or proj_name=='null':
+        return "请选择！",emo_speaker.update(choices=[],value=None)
     global emo_current_proj_name
     global class_info
     global emo_speaker_list
     emo_current_proj_name=proj_name
+    
     try:
         class_info = yaml.load(open(os.path.join('Data',proj_name,'emo_clustering.yml')),Loader=yaml.FullLoader)
         emo_speaker_list=list(class_info.keys())
-        return emo_status_text.update(value=f"当前的实验：{proj_name}"),emo_speaker.update(choices=emo_speaker_list,value=emo_speaker_list[0]),*emo_change_speaker(emo_speaker_list[0])#,*load_page(emo_speaker_list[0],list(class_info[emo_speaker_list[0]].keys())[0])
+        return emo_status_text.update(value=f"当前的实验：{proj_name}"),emo_speaker.update(choices=emo_speaker_list,value=emo_speaker_list[0])#,*emo_change_speaker(emo_speaker_list[0])#,*load_page(emo_speaker_list[0],list(class_info[emo_speaker_list[0]].keys())[0])
     except Exception as e:
         class_info={}
         emo_speaker_list=[]
-        return emo_status_text.update(value='加载错误'+str(e)),None,None,*emo_ret_none()
+        return emo_status_text.update(value='加载错误'+str(e)),emo_speaker.update(choices=[],value=None)
 
 def get_transcription(proj_name,spk,wav):#transciption and wav path
     y=yaml.load(open(os.path.join('Data',proj_name,'config.yml')),Loader=yaml.FullLoader)
@@ -65,15 +78,20 @@ def get_transcription(proj_name,spk,wav):#transciption and wav path
         for lines in f:
             if os.path.normpath(lines.split("|")[0])==wav_path:
                 return lines.split("|")[3],wav_path
+        return "加载失败",""
 
 
 def emo_change_speaker(speaker): 
+    if speaker is None:
+        return emo_chosen_class.update(choices=[],value=None)
     global current_page
     current_page=1
     lst=list(class_info[speaker].keys())
     return emo_chosen_class.update(choices=lst,value=lst[0]),*switch_page(speaker,lst[0])
 
 def emo_change_class(speaker,class_):
+    if (speaker is None) or (class_ is None):
+        return emo_ret_none()
     global current_page
     current_page=1
     return switch_page(speaker,class_)
@@ -103,8 +121,11 @@ def load_page(page_start,page_end,spk,class_name):#load lines of content
     for i in range(page_start, page_end+1):
         wav_name=class_info[spk][class_name][i]
         tr,wavpath=get_transcription(emo_current_proj_name,spk,wav_name)
-        wavname_list.append(gr.Textbox().update(value=wav_name,label=i,visible=True))
-        audio_list.append(gr.Audio.update(label="情感参考音频",value=wavpath,interactive=False,visible=True))
+        if wavpath=="":
+           audio_list.append(gr.Audio.update(label="情感参考音频",value=None,interactive=False,visible=True)) 
+        else:
+           audio_list.append(gr.Audio.update(label="情感参考音频",value=wavpath,interactive=False,visible=True)) 
+        wavname_list.append(gr.Textbox().update(value=wav_name,label=i,visible=True))        
         transcription_list.append(gr.Textbox().update(value=tr,visible=True))
         checkbox_list.append(gr.Checkbox().update(value=False,visible=True))
     length=page_end-page_start
@@ -237,8 +258,12 @@ def p0_mkdir(name):
          os.mkdir(os.path.join(path,'filelists'))
          os.mkdir(os.path.join(path,'models'))       
          shutil.copy("./configs/config.json",os.path.join(path,"config.json"))
-         with open('./configs/default_config.yml', mode="r", encoding="utf-8") as f:
-            cfg_yml=yaml.load(f,Loader=yaml.FullLoader)
+         try:
+            with open('./configs/default_config.yml', mode="r", encoding="utf-8") as f:
+                cfg_yml=yaml.load(f,Loader=yaml.FullLoader)
+         except:
+            with open('default_config.yml', mode="r", encoding="utf-8") as f:
+                cfg_yml=yaml.load(f,Loader=yaml.FullLoader)
          cfg_yml["dataset_path"]=path
          cfg_yml["resample"]["in_dir"]="custom_character_voice"
          cfg_yml["resample"]["out_dir"]="custom_character_voice"
@@ -274,31 +299,31 @@ def p0_load_cfg(projectname):
 
 
 def a1a_transcribe(size,lang):
-     command = f'venv\python.exe short_audio_transcribe.py --languages {lang} --whisper_size {size}'
+     command = f'{py_dir} short_audio_transcribe.py --languages {lang} --whisper_size {size}'
      print(command+'\n\n')
      subprocess.Popen(['start', 'cmd', '/k', command],cwd=current_directory,shell=True)
      return '新的命令行窗口已经打开，请关注输出信息。完成后无报错即可关闭进行下一步！'
 
 def a1b_transcribe_genshin():
-     command = r"venv\python.exe transcribe_genshin.py"
+     command = f"{py_dir} transcribe_genshin.py"
      print(command+'\n\n')
      subprocess.Popen(['start', 'cmd', '/k', command],cwd=current_directory,shell=True)
      return '新的命令行窗口已经打开，请关注输出信息。完成后无报错即可关闭进行下一步！'
 
 def a2_preprocess_text():
-     command = r"venv\python.exe preprocess_text.py"
+     command = f"{py_dir} preprocess_text.py"
      print(command+'\n\n')
      subprocess.Popen(['start', 'cmd', '/k', command],cwd=current_directory,shell=True)
      return '新的命令行窗口已经打开，请关注输出信息。完成后无报错即可关闭进行下一步！'
 
 def a3_bert_gen():
-     command = r"venv\python.exe bert_gen.py"
+     command = f"{py_dir} bert_gen.py"
      print(command+'\n\n')
      subprocess.Popen(['start', 'cmd', '/k', command],cwd=current_directory,shell=True)
      return '新的命令行窗口已经打开，请关注输出信息。完成后无报错即可关闭进行下一步！'
 
 def a3_emo_gen():
-    command=r"venv\python.exe emo_gen.py"
+    command = f"{py_dir} emo_gen.py"
     print(command+'\n\n')
     subprocess.Popen(['start', 'cmd', '/k', command],cwd=current_directory,shell=True)
     return '新的命令行窗口已经打开，请关注输出信息。完成后无报错即可关闭进行下一步！'
@@ -308,7 +333,7 @@ def a35_json(bs,lr,interval):
         with open('config.yml', mode="r", encoding="utf-8") as f:
             cfg_yml=yaml.load(f,Loader=yaml.FullLoader)
         config_path=os.path.join(cfg_yml["dataset_path"],'config.json')
-        configjson = json.load(open(config_path))
+        configjson = json.load(open(config_path, encoding="utf-8"))
         configjson["train"]["batch_size"] = int(bs)
         configjson["train"]["learning_rate"] = lr
         configjson["train"]["log_interval"] = int(interval)
@@ -321,11 +346,11 @@ def a35_json(bs,lr,interval):
     
         
 def a4a_train():
-     command = r"venv\python.exe train_ms.py"
+     command = f"{py_dir} train_ms.py"
      with open('config.yml', mode="r", encoding="utf-8") as f:
           configyml=yaml.load(f,Loader=yaml.FullLoader)
      cfg_path=os.path.join(configyml["dataset_path"],'config.json')        
-     configjson = json.load(open(cfg_path))
+     configjson = json.load(open(cfg_path, encoding="utf-8"))
      if not configjson["train"]["skip_optimizer"]:
          configjson["train"]["skip_optimizer"]=True
          with open(cfg_path, 'w', encoding='utf-8') as f:
@@ -340,11 +365,11 @@ def a4a_train():
      return '新的命令行窗口已经打开，请关注输出信息。关闭窗口或Ctrl+C终止训练'
 
 def a4b_train_cont():
-     command = r"venv\python.exe train_ms.py"
+     command = f"{py_dir} train_ms.py"
      with open('config.yml', mode="r", encoding="utf-8") as f:
             configyml=yaml.load(f,Loader=yaml.FullLoader)
      cfg_path=os.path.join(configyml["dataset_path"],'config.json')   
-     configjson = json.load(open(cfg_path))
+     configjson = json.load(open(cfg_path, encoding="utf-8"))
      if configjson["train"]["skip_optimizer"]:
          configjson["train"]["skip_optimizer"]=False
          with open(cfg_path, 'w', encoding='utf-8') as f:
@@ -357,7 +382,7 @@ def a4b_train_cont():
 def start_tb():
      with open('config.yml', mode="r", encoding="utf-8") as f:
             configyml=yaml.load(f,Loader=yaml.FullLoader)
-     command = r"venv\python.exe -m tensorboard.main --logdir="+os.path.join(configyml["dataset_path"],configyml["train_ms"]["model"])
+     command = f"{py_dir} -m tensorboard.main --logdir="+os.path.join(configyml["dataset_path"],configyml["train_ms"]["model"])
      print(command+'\n\n')
      subprocess.Popen(['start', 'cmd', '/k', command],cwd=current_directory,shell=True)
      return '新的命令行窗口已经打开，请关注输出信息。'
@@ -381,7 +406,7 @@ def c2_infer(proj_name,model_name):
         return '请选择模型！'
    
     path=f'./Data/{proj_name}'
-    command = f'venv\python.exe webui.py -c {path}/config.json -m {path}/models/{model_name}'
+    command = f'{py_dir} webui.py -c {path}/config.json -m {path}/models/{model_name}'
     print(command+'\n\n')
     subprocess.Popen(['start', 'cmd', '/k', command],cwd=current_directory,shell=True)
     return '新的命令行窗口已经打开，请关注输出信息。关闭窗口结束推理服务。'
@@ -395,7 +420,7 @@ def c2_infer_2(proj_name,model_name):
         y["server"]["models"].append({"config":os.path.join('Data',proj_name,'config.json'),"device":'cuda',"language": 'ZH',"model":os.path.join('Data',proj_name,'models',model_name),"speakers":[]})
     with open("config.yml", 'w', encoding='utf-8') as f:
         yaml.dump(y, f) 
-    subprocess.Popen(['start', 'cmd', '/k','venv\python.exe server_fastapi.py'],cwd=current_directory,shell=True)
+    subprocess.Popen(['start', 'cmd', '/k',f'{py_dir} server_fastapi.py'],cwd=current_directory,shell=True)
     return '已经修改了全局配置文件。新的命令行窗口已经打开，请关注输出信息。关闭窗口结束推理服务。'
 
 def write_version(name,version,cont):
@@ -433,10 +458,23 @@ def emo_write(proj_name):
         return 'Success'
     except Exception as e:
         return '写入出错'+str(e)
-   
+
+def run_ec_gen(proj_name,num_clusters,num_wav):
+     if proj_name=="":
+        command = f"{py_dir} emotion_clustering.py -n {int(num_clusters)} -r {int(num_wav)}"
+     else:
+        command = f"{py_dir} emotion_clustering.py -y {os.path.join('Data',proj_name,'config.yml')} -n {int(num_clusters)} -r {int(num_wav)}" 
+     print(command+'\n\n')
+     subprocess.Popen(['start', 'cmd', '/k', command],cwd=current_directory,shell=True)
+     return '新的命令行窗口已经打开，请关注输出信息。'
 
 if __name__ == "__main__":
-    with gr.Blocks(title="Bert-VITS-2-Manager-WebUI-202") as app:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-p", "--server_port", default=6660,type=int,help="server_port"
+    )
+    args = parser.parse_args()
+    with gr.Blocks(title="Bert-VITS-2-Manager-WebUI-210") as app:
         gr.Markdown(value="""
         Bert-VITS2训练管理器
                     
@@ -468,8 +506,8 @@ if __name__ == "__main__":
                             p0_val_tt = gr.Number(label="总的验证集数", value="8",interactive=True)
                             p0_bg_t = gr.Number(label="bert_gen线程数", value="2",interactive=True)
                             p0_emo_t = gr.Number(label="emo_gen线程数", value="2",interactive=True)
-                            p0_dataloader = gr.Number(label="data_loader数量", value="4",interactive=True)
-                            p0_keep_ckpt = gr.Number(label="模型留存个数", value="4",interactive=True)
+                            p0_dataloader = gr.Number(label="num_workers", value="4",interactive=True)
+                            p0_keep_ckpt = gr.Number(label="模型留存个数", value="10",interactive=True)
                        p0_load_cfg_output_text = gr.Textbox(label="输出信息", placeholder="点击处理按钮",interactive=False)
                        with gr.Row():
                           p0_write_cfg_btn=gr.Button(value="保存更改(但不会自动加载)", variant="primary")
@@ -486,28 +524,30 @@ if __name__ == "__main__":
                    whisper_size = gr.Radio(label="选择whisper大小，large需要12G显存", choices=['large','medium','small'], value="medium")
                    language = gr.Radio(label="选择语言(默认中日英，其他不支持的语言会被跳过)", choices=['C','CJ','CJE'], value="CJE") 
                with gr.Column():
-                       a1_textbox_output_text = gr.Textbox(label="输出信息", placeholder="点击处理按钮，二选一",interactive=False)
-                       a1a_btn = gr.Button(value="1.a.数据集重采样和标注(使用whisper)", variant="primary")
-                       a1b_btn = gr.Button(value="1.b.处理下载的已标注的原神数据集", variant="primary")              
-               gr.Markdown(value="<br>")      
+                    with gr.Row():
+                        a1a_btn = gr.Button(value="1.a.数据集重采样和标注(使用whisper)", variant="primary")
+                        a1b_btn = gr.Button(value="1.b.处理下载的已标注的原神数据集", variant="primary") 
+                    a1_textbox_output_text = gr.Textbox(label="输出信息", placeholder="点击处理按钮，二选一",interactive=False)                
+               #gr.Markdown(value="<br>")      
                with gr.Row():
                     a2_btn = gr.Button(value="2.文本预处理", variant="primary")
                     a2_textbox_output_text = gr.Textbox(label="输出信息", placeholder="点击处理按钮",interactive=False)
-
+               #gr.Markdown(value="<br>") 
                with gr.Row():
                   a3_btn = gr.Button(value="3-1.生成bert文件", variant="primary")
                   a3_btn_2 = gr.Button(value="3-2.生成emo文件", variant="primary")
                   a3_textbox_output_text = gr.Textbox(label="输出信息", placeholder="点击处理按钮",interactive=False)                                  
-
+              # gr.Markdown(value="<br>") 
                with gr.Row():
-                    with gr.Row():
-                        a35_textbox_bs = gr.Number(label="批大小", value="8",interactive=True)
-                        a35_textbox_lr = gr.Number(label="学习率", value="0.0001",interactive=True)
-                        a35_textbox_save = gr.Number(label="保存间隔", value="100",interactive=True)
-               with gr.Row():
-                   a35_btn = gr.Button(value="写入配置文件", variant="primary")
-                   a35_textbox_output_text = gr.Textbox(label="输出信息", placeholder="点击处理按钮",interactive=False)
-   
+                    #with gr.Column():
+                    a35_btn = gr.Button(value="写入配置文件", variant="primary")
+                    with gr.Column():
+                        with gr.Row():
+                            a35_textbox_bs = gr.Number(label="批大小", value="8",interactive=True)
+                            a35_textbox_lr = gr.Number(label="学习率", value="0.0001",interactive=True)
+                            a35_textbox_save = gr.Number(label="保存间隔", value="100",interactive=True)
+                        a35_textbox_output_text = gr.Textbox(label="输出信息", placeholder="点击处理按钮",interactive=False) 
+               #gr.Markdown(value="<br>") 
                with gr.Row():              
                     with gr.Row():
                        a4a_btn = gr.Button(value="4a.首次训练", variant="primary")
@@ -533,7 +573,7 @@ if __name__ == "__main__":
            with gr.TabItem("辅助功能"):
                 with gr.TabItem("情感分类编辑"):
                     with gr.Row():
-                        project_name4=gr.Dropdown(label="选择实验名", choices=list_project, value='null',interactive=True)
+                        project_name4=gr.Dropdown(label="选择实验名", choices=list_project,value=''if not list_project else list_project[0],interactive=True)
                         emo_proj_load_btn=gr.Button(value="加载配置", variant="primary")
                         emo_proj_refresh=gr.Button(value="刷新选项", variant="secondary")
                     emo_status_text=gr.Textbox(label="状态", placeholder="点击处理按钮",interactive=False)
@@ -541,9 +581,13 @@ if __name__ == "__main__":
                     with gr.Column():
                         with gr.Row():
                             emo_speaker=gr.Dropdown(label='选择说话人',choices=emo_speaker_list,interactive=True)
-                            emo_chosen_class=gr.Dropdown(label='选择类别',choices=emo_class_list,value='null'if not emo_class_list else emo_class_list[0],interactive=True)
-                            emo_write_btn=gr.Button(value="写入", variant="primary")
-                    
+                            emo_chosen_class=gr.Dropdown(label='选择类别',choices=emo_class_list,interactive=True)
+                            emo_write_btn=gr.Button(value="写入(保存更改)", variant="primary")
+                        with gr.Accordion("生成配置"):
+                            with gr.Row():
+                                ec_gen_btn=gr.Button(value="生成配置",variant="primary")
+                                ec_gen_n_clu=gr.Number(label="类别数量",value=5)
+                                ec_gen_range=gr.Number(label="每类的音频数",value=5)                    
                         with gr.Accordion("编辑区域"):
                             with gr.Row():                                
                                 emo_enter_rename=gr.Textbox(label="重命名",placeholder="在此输入重命名，然后点击重命名按钮",scale=2)
@@ -591,12 +635,17 @@ if __name__ == "__main__":
                       with gr.Column():
                           write_ver_textbox=gr.Textbox(label="输出信息", placeholder="点击处理按钮",interactive=False)
            with gr.TabItem("关于&帮助"):
-                with gr.TabItem("项目简介"):            
-                    help=gr.Markdown(value=readme_md)
+                with gr.TabItem("项目简介"):
+                    with gr.Row():            
+                        gr.Markdown(value=readme_md)
+                        gr.Markdown(value=update_info)
                 with gr.TabItem("训练流程和命令行使用"): 
                     with gr.Row():                  
-                        help=gr.Markdown(value=cmd_md)                      
-                        help=gr.Markdown(value=file_structure_md)
+                        gr.Markdown(value=cmd_md)                      
+                        gr.Markdown(value=file_structure_md)
+                with gr.TabItem("常见错误"):
+                    with gr.Row():
+                        gr.Markdown(value=errors)
 
         p0_write_cfg_btn.click(p0_write_yml,
                            inputs=[project_name,p0_val_ps,p0_val_tt,p0_bg_t,p0_emo_t,p0_dataloader,p0_keep_ckpt],
@@ -712,7 +761,7 @@ if __name__ == "__main__":
                 write_ver_textbox,
             ],
         ) 
-        emo_proj_load_btn.click(load_emo_clu,inputs=[project_name4],outputs=[emo_status_text,emo_speaker,emo_chosen_class,*emo_file_name_list,*emo_tr_list,*emo_audio_list,*emo_checkbox_list,previous_btn,emo_page_index,next_btn])
+        emo_proj_load_btn.click(load_emo_clu,inputs=[project_name4],outputs=[emo_status_text,emo_speaker])
         #emo_del_class_btn.click()
         emo_del_wav_btn.click(
             del_wav_in_class,
@@ -748,6 +797,11 @@ if __name__ == "__main__":
             emo_write,
             inputs=[project_name4],
             outputs=[emo_status_text]
-        )       
-webbrowser.open("http://127.0.0.1:6660")
-app.launch(server_port=6660)
+        ) 
+        ec_gen_btn.click(
+            run_ec_gen,
+            inputs=[project_name4,ec_gen_n_clu,ec_gen_range],
+            outputs=[emo_status_text]
+        )      
+webbrowser.open(f"http://127.0.0.1:{args.server_port}")
+app.launch(share=False,server_port=args.server_port)

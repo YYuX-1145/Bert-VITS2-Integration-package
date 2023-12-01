@@ -2,7 +2,6 @@
 import os
 import logging
 import re_matching
-import argparse
 from tools.sentence import split_by_language
 
 logging.getLogger("numba").setLevel(logging.WARNING)
@@ -26,6 +25,7 @@ from config import config
 from tools.translate import translate
 import librosa
 import yaml
+import argparse
 
 net_g = None
 
@@ -83,6 +83,8 @@ def generate_audio_multilang(
     length_scale,
     speaker,
     language,
+    reference_audio,
+    emotion,
     skip_start=False,
     skip_end=False,
 ):
@@ -94,6 +96,8 @@ def generate_audio_multilang(
             skip_end = (idx != len(slices) - 1) and skip_end
             audio = infer_multilang(
                 piece,
+                reference_audio=reference_audio,
+                emotion=emotion,
                 sdp_ratio=sdp_ratio,
                 noise_scale=noise_scale,
                 noise_scale_w=noise_scale_w,
@@ -321,10 +325,10 @@ def tts_fn(
                         noise_scale,
                         noise_scale_w,
                         length_scale,
-                        reference_audio,
-                        emotion,
                         speaker,
                         lang_to_generate,
+                        reference_audio,
+                        emotion,
                         skip_start,
                         skip_end,
                     )
@@ -355,8 +359,8 @@ def load_class_info():
         class_info=yaml.load(open(os.path.join(config.dataset_path,'emo_clustering.yml')),Loader=yaml.FullLoader)
         #print(class_info)
     except:
-        for spk in speakers:
-           class_info={}
+        class_info={}
+        for spk in speakers: 
            class_info[spk]={'null':[]}
 
 def choose_class(speaker,init=None):
@@ -381,9 +385,6 @@ def load_chosen_audio(speaker,audio_name):
 
 
 if __name__ == "__main__":
-    if config.webui_config.debug:
-        logger.info("Enable DEBUG-LEVEL log")
-        logging.basicConfig(level=logging.DEBUG)
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-m", "--model", default=config.webui_config.model, help="path of your model"
@@ -395,7 +396,10 @@ if __name__ == "__main__":
         help="path of your config file",
     )
     args = parser.parse_args()
-    hps = utils.get_hparams_from_file(args.config)          
+    if config.webui_config.debug:
+        logger.info("Enable DEBUG-LEVEL log")
+        logging.basicConfig(level=logging.DEBUG)
+    hps = utils.get_hparams_from_file(args.config)  
     # 若config.json中未指定版本则默认为最新版本
     version = hps.version if hasattr(hps, "version") else latest_version
     net_g = get_net_g(
@@ -407,7 +411,7 @@ if __name__ == "__main__":
     classes_list=[]
     choose_class(speakers[0],True)
     wav_in_class=[]
-    choose_wav_in_class(speakers[0],classes_list[0],True)
+    choose_wav_in_class(speakers[0],classes_list[0],True)    
     languages = ["ZH", "JP", "EN", "mix", "auto"]
     with gr.Blocks() as app:
         with gr.Row():
@@ -425,6 +429,7 @@ if __name__ == "__main__":
                     """,
                 )
                 trans = gr.Button("中翻日", variant="primary")
+                slicer = gr.Button("快速切分", variant="primary")
                 speaker = gr.Dropdown(
                     choices=speakers, value=speakers[0], label="Speaker"
                 )
@@ -483,8 +488,8 @@ if __name__ == "__main__":
                     classes = gr.Dropdown(choices=classes_list, value='null' if not classes_list else classes_list[0], label="选择类别",interactive=True)
                     choose_wav=gr.Dropdown(choices=wav_in_class, value='null' if not wav_in_class else wav_in_class[0], label="选择音频",interactive=True)
                     submit_audio_choice=gr.Button("加载音频", variant="primary")
-        speaker.change(choose_class,inputs=[speaker],outputs=[classes])
-        classes.change(choose_wav_in_class,inputs=[speaker,classes],outputs=[choose_wav])
+                speaker.change(choose_class,inputs=[speaker],outputs=[classes])
+                classes.change(choose_wav_in_class,inputs=[speaker,classes],outputs=[choose_wav])
         btn.click(
             tts_fn,
             inputs=[
@@ -510,7 +515,7 @@ if __name__ == "__main__":
             load_chosen_audio,
             inputs=[speaker,choose_wav],
             outputs=[reference_audio,text_output],
-        )
+        )        
         slicer.click(
             tts_split,
             inputs=[
