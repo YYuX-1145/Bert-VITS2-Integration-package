@@ -85,7 +85,7 @@ train_ms:
   # 训练模型存储目录：与旧版本的区别，原先数据集是存放在logs/model_name下的，现在改为统一存放在Data/你的数据集/models下
   model: "models"
   # 配置文件路径
-  config_path: "configs/config.json"
+  config_path: "config.json"
   # 训练使用的worker，不建议超过CPU核心数
   num_workers: 16
   # 关闭此项可以节约接近50%的磁盘空间，但是可能导致实际训练速度变慢和更高的CPU使用率。
@@ -102,7 +102,7 @@ webui:
   # 模型路径
   model: "genshin/models/G_8000.pth"
   # 配置文件路径
-  config_path: "configs/config.json"
+  config_path: "config.json"
   # 端口号
   port: 7860
   # 是否公开部署，对外网开放
@@ -121,8 +121,10 @@ server:
   port: 5000
   # 模型默认使用设备：但是当前并没有实现这个配置。
   device: "cuda"
-  # 需要加载的所有模型的配置
+  # 需要加载的所有模型的配置，可以填多个模型，也可以不填模型，等网页成功后手动加载模型
+  # 不加载模型的配置格式：删除默认给的两个模型配置，给models赋值 [ ]，也就是空列表。参考模型2的speakers 即 models: [ ]
   # 注意，所有模型都必须正确配置model与config的路径，空路径会导致加载错误。
+  # 也可以不填模型，等网页加载成功后手动填写models。
   models:
     - # 模型的路径
       model: ""
