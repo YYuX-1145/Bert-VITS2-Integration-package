@@ -2,8 +2,9 @@
 ## Bert-VITS2更新可参阅：
 + [fishaudio/Bert-VITS2](https://github.com/fishaudio/Bert-VITS2/releases)
 * 代码版本：11.30日master分支代码
-# WebUI管理器和整合包更新
-* 1.增加对whisper-large-V3支持，打标准确的有些许提升
+# 更新日志
+## WebUI管理器和整合包更新（2.1）
+* 1.增加对whisper-large-V3支持，打标准确性有些许提升
 * 2.whisper打标默认会同时生成.lab标注文本文件，下一次处理数据集就更简单了。
 * 3.提前一个版本加入情绪快速分类功能（见辅助功能），支持编辑和预览分类配置文件，推理时可以快速调用参考音频。
 * 4.支持启动HiyoriUI推理（截止制作时，对应版本还未发布，有需要可以自己去下载，并自己更新server_fastapi.py）

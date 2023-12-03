@@ -21,7 +21,7 @@ python
 ```
 %PYTHON% setup_ffmpeg.py
 ```
-执行一次即可。安装是把当前文件夹下ffmpeg加入环境变量，因此执行完不要移动或删除。否则需要手动更改环境变量。***安装完可能需要重启才能生效。***
+执行一次即可。安装是把当前文件夹下ffmpeg加入环境变量，因此执行完不要移动或删除。否则需要手动更改环境变量。***安装完可能需要重启才能生效。部分设备可能要手动加入系统的path,请自行寻找教程。***
 
 # 注意：首先需要创建或更改全局设置。作用见default_config.yml。将config.yml放在根目录下即可生效。
 ## 参数解释
@@ -109,6 +109,6 @@ python
 
 # 5.推理：
 ```
-%PYTHON% webui.py -m ./logs\OUTPUT_MODEL\G_100.pth
+%PYTHON% webui.py -m Data\XXX\models\G_100.pth
 ```
 参数：--c 可选，指定配置文件路径  --m为模型指定路径
