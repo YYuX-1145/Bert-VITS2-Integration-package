@@ -132,11 +132,11 @@ def run():
         train_dataset,
         num_workers=min(config.train_ms_config.num_workers, os.cpu_count() - 1),
         shuffle=False,
-        pin_memory=False,
+        pin_memory=True,
         collate_fn=collate_fn,
         batch_sampler=train_sampler,
-        persistent_workers=True,
-        prefetch_factor=2,
+#        persistent_workers=True,
+#        prefetch_factor=2,
     )  # DataLoader config could be adjusted.
     if rank == 0:
         eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data)
