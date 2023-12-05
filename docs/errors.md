@@ -1,5 +1,5 @@
 # 常见错误和解决办法
-错误反馈：（https://github.com/YYuX-1145/Bert-VITS2-Integration-package/issues）
+错误反馈：(https://github.com/YYuX-1145/Bert-VITS2-Integration-package/issues)
 # whisper转写文本时的错误
 ```
 Warning: no short audios found

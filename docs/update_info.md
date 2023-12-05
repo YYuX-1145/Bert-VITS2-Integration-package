@@ -14,7 +14,7 @@
 * 1.模型混合和onnx导出
 * 2.以上内容比较冷门，暂不打算在webui中加入此功能。你可以参阅对应代码执行操作。  
 注意：由于emo-vq效果不佳，因此2.1算作一个过渡版本。  
-问题或建议反馈：（https://githb.com/YYuX-1145/Bert-VITS2-Integration-package/issues）
+问题或建议反馈：(https://github.com/YYuX-1145/Bert-VITS2-Integration-package/issues)
 # 推荐的工具/软件
 ## Hiyori UI for BertVits2
 [jiangyuxiaoxiao/Bert-VITS2-UI](https://github.com/jiangyuxiaoxiao/Bert-VITS2-UI)  

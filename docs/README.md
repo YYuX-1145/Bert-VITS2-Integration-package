@@ -1,6 +1,5 @@
 # Bert-VITS2整合包
 # 注意：本整合包是免费且无条件提供下载的！整合包本体不得商用，不得二次分发。  
-## Bert-VITS2商业相关问题请咨询项目组（但我认为一般是不让商用的）
 
 ## 功能：整合包加入了标注功能。新加的WebUI可以让训练更加轻松。
 
@@ -12,7 +11,7 @@
 + [cronrpc/SubFix](https://github.com/cronrpc/SubFix)（界面和功能）
 + [fishaudio/Bert-VITS2](https://github.com/fishaudio/Bert-VITS2)（代码）
 + [Plachtaa/VITS-fast-fine-tuning](https://github.com/Plachtaa/VITS-fast-fine-tuning)（代码）
-## 本整合包禁止在未经修改的情况下二次分发<br>（功能上经过修改和改进的版本应标注来源）
+## 本整合包禁止二次分发和商用<br>
 
 ## 严禁将此项目用于一切违反《中华人民共和国宪法》，《中华人民共和国刑法》，《中华人民共和国治安管理处罚法》和《中华人民共和国民法典》之用途。由使用本整合包产生的问题和作者、原作者无关！！！
 <br><br>
