@@ -38,7 +38,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--languages", default="CJ")
     parser.add_argument("--whisper_size", default="medium")
-    parser.add_argument("--lab_gen", default=True,type=bool, help="Generate label file")
     args = parser.parse_args()
     if args.languages == "CJE":
         lang2token = {
@@ -64,8 +63,6 @@ if __name__ == "__main__":
     speaker_names = list(os.walk(parent_dir))[0][1]
     speaker_annos = []
     total_files = sum([len(files) for r, d, files in os.walk(parent_dir)])
-    # resample audios
-    # 2023/4/21: Get the target sampling rate
     with open(config.train_ms_config.config_path,'r', encoding='utf-8') as f:
         hps = json.load(f)
     target_sr = hps['data']['sampling_rate']
@@ -76,26 +73,40 @@ if __name__ == "__main__":
             if wavfile.startswith("processed_"):
                 continue
             try:
-                wav, sr = torchaudio.load(parent_dir + "/" + speaker + "/" + wavfile, frame_offset=0, num_frames=-1, normalize=True,
+                save_path = parent_dir+"/"+ speaker + "/" + f"processed_{wavfile}"
+                lab_path = parent_dir+"/"+ speaker + "/" + f"processed_{os.path.splitext(wavfile)[0]}.lab"
+                wav_path =parent_dir + "/" + speaker + "/" + wavfile
+                if not os.path.exists(save_path):                
+                    processed=True
+                    wav, sr = torchaudio.load(wav_path, frame_offset=0, num_frames=-1, normalize=True,
                                           channels_first=True)
-                wav = wav.mean(dim=0).unsqueeze(0)
-                if sr != target_sr:
-                    wav = torchaudio.transforms.Resample(orig_freq=sr, new_freq=target_sr)(wav)
-                if wav.shape[1] / sr > 20:
-                    print(f"warning: {wavfile} too long\n")
-                save_path = parent_dir+"/"+ speaker + "/" + f"processed_{i}.wav"
-                torchaudio.save(save_path, wav, target_sr, channels_first=True)
+                    wav = wav.mean(dim=0).unsqueeze(0)
+                    if sr != target_sr:
+                        wav = torchaudio.transforms.Resample(orig_freq=sr, new_freq=target_sr)(wav)
+                    if wav.shape[1] / sr > 20:
+                        print(f"warning: {wavfile} too long\n")
+                    torchaudio.save(save_path, wav, target_sr, channels_first=True)
+                else:
+                   processed=False
+
                 # transcribe text
-                lang, text = transcribe_one(save_path)
-                if lang not in list(lang2token.keys()):
-                    print(f"{lang} not supported, ignoring\n")
-                    continue
+                try:
+                    with open((lab_path), "r", encoding="utf-8") as f:
+                        text=f.read()
+                    assert '|' in text  
+                    print("[进度恢复]： "+lab_path+"已找到并已经成功读取") 
+                except Exception as e:
+                    if not processed:
+                        print("[进度恢复]： "+lab_path+"未找到或读取错误"+str(e))
+                    lang, text = transcribe_one(save_path)
+                    if lang not in list(lang2token.keys()):
+                        print(f"{lang} not supported, ignoring\n")
+                        continue
                 #text = "ZH|" + text + "\n"                
-                text = lang2token[lang] + text + "\n"
-                speaker_annos.append(save_path + "|" + speaker + "|" + text)
-                if args.lab_gen:
-                    with open((parent_dir+"/"+ speaker + "/" + f"processed_{i}.lab"), "w", encoding="utf-8") as f:
+                    text = lang2token[lang] + text + "\n"
+                    with open((lab_path), "w", encoding="utf-8") as f:
                         f.write(text)
+                speaker_annos.append(save_path + "|" + speaker + "|" + text)
                 
                 
                 processed_files += 1
@@ -103,34 +114,12 @@ if __name__ == "__main__":
             except Exception as e:
                 print(e)
                 continue
-
-    # # clean annotation
-    # import argparse
-    # import text
-    # from utils import load_filepaths_and_text
-    # for i, line in enumerate(speaker_annos):
-    #     path, sid, txt = line.split("|")
-    #     cleaned_text = text._clean_text(txt, ["cjke_cleaners2"])
-    #     cleaned_text += "\n" if not cleaned_text.endswith("\n") else ""
-    #     speaker_annos[i] = path + "|" + sid + "|" + cleaned_text
-    # write into annotation
+    #end
     if len(speaker_annos) == 0:
-        print("Warning: no short audios found, this IS expected if you have only uploaded long audios, videos or video links.")
-        print("this IS NOT expected if you have uploaded a zip file of short audios. Please check your file structure or make sure your audio language is supported.")
-    with open(config.preprocess_text_config.transcription_path, 'w', encoding='utf-8') as f:
-        for line in speaker_annos:
-            f.write(line)
-
-    # import json
-    # # generate new config
-    # with open("./configs/finetune_speaker.json", 'r', encoding='utf-8') as f:
-    #     hps = json.load(f)
-    # # modify n_speakers
-    # hps['data']["n_speakers"] = 1000 + len(speaker2id)
-    # # add speaker names
-    # for speaker in speaker_names:
-    #     hps['speakers'][speaker] = speaker2id[speaker]
-    # # save modified config
-    # with open("./configs/modified_finetune_speaker.json", 'w', encoding='utf-8') as f:
-    #     json.dump(hps, f, indent=2)
-    # print("finished")
+        print("Warning: length of speaker_annos == 0")
+        print("this IS NOT expected. Please check your file structure , make sure your audio language is supported or check ffmpeg path.")
+    else:
+        with open(config.preprocess_text_config.transcription_path, 'w', encoding='utf-8') as f:
+            for line in speaker_annos:
+                f.write(line)
+        print("finished")
