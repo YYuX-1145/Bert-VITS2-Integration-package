@@ -1,8 +1,10 @@
 import os
 import random
 import torch
+import torchaudio
 import torch.utils.data
 from tqdm import tqdm
+import numpy as np
 from tools.log import logger
 import commons
 from mel_processing import spectrogram_torch, mel_spectrogram_torch
@@ -96,15 +98,16 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         return (phones, spec, wav, sid, tone, language, bert, ja_bert, en_bert)
 
     def get_audio(self, filename):
-        audio, sampling_rate = load_wav_to_torch(filename)
+        #audio, sampling_rate = load_wav_to_torch(filename)
+        audio_norm, sampling_rate = torchaudio.load(filename, frame_offset=0, num_frames=-1, normalize=True, channels_first=True)
         if sampling_rate != self.sampling_rate:
             raise ValueError(
                 "{} {} SR doesn't match target {} SR".format(
                     filename, sampling_rate, self.sampling_rate
                 )
             )
-        audio_norm = audio / self.max_wav_value
-        audio_norm = audio_norm.unsqueeze(0)
+        #audio_norm = audio / self.max_wav_value
+        #audio_norm = audio_norm.unsqueeze(0)
         spec_filename = filename.replace(".wav", ".spec.pt")
         if self.use_mel_spec_posterior:
             spec_filename = spec_filename.replace(".spec.pt", ".mel.pt")
