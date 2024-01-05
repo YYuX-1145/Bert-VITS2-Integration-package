@@ -194,7 +194,6 @@ def infer(
     # 非当前版本，根据版本号选择合适的infer
     if version != latest_version:
         if version in inferMap_V4.keys():
-            emotion = ""  # Use empty emotion prompt
             return inferMap_V4[version](
                 text,
                 emotion,
@@ -214,7 +213,6 @@ def infer(
                 style_weight,
             )
         if version in inferMap_V3.keys():
-            emotion = 0
             return inferMap_V3[version](
                 text,
                 sdp_ratio,
