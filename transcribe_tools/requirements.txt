@@ -1,0 +1,2 @@
+modelscope==1.9.3
+funasr
