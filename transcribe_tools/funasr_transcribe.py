@@ -21,7 +21,7 @@ def transcribe_one(item):
     parent_dir,sav_dir,speaker,wavfile,target_sr=item
     if not wavfile.startswith("processed_"):
         try:
-            assert os.path.splitext(wavfile)[-1]==".wav"
+            #assert os.path.splitext(wavfile)[-1]==".wav"
             save_path = sav_dir+"/"+ speaker + "/" + f"processed_{wavfile}"
             lab_path = sav_dir+"/"+ speaker + "/" + f"processed_{os.path.splitext(wavfile)[0]}.lab"
             wav_path =parent_dir + "/" + speaker + "/" + wavfile
@@ -59,7 +59,7 @@ def transcribe_one(item):
 def run_transcription(speaker,processs):
     global parent_dir,sav_dir,target_sr
     global speaker_annos
-    tasks = [(parent_dir,sav_dir,speaker,wavfile,target_sr) for wavfile in os.listdir(os.path.join(parent_dir,speaker))]
+    tasks = [(parent_dir,sav_dir,speaker,wavfile,target_sr) for wavfile in [i for i in os.listdir(os.path.join(parent_dir,speaker)) if i.endswith(".wav")]]
     with Pool(processes=processs) as p:                
         speaker_annos += list(tqdm(p.imap(transcribe_one,tasks),total=len(tasks)))
         
