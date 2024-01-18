@@ -27,7 +27,10 @@ def transcribe_one(audio_path):
     print(f"Detected language: {max(probs, key=probs.get)}")
     lang = max(probs, key=probs.get)
     # decode the audio
-    options = whisper.DecodingOptions(beam_size=5)
+    if lang=="zh":
+        options = whisper.DecodingOptions(beam_size=5,prompt="在这三大欲望当中，因为食欲是满足人类生存需求的欲望。所以，满足食欲的行为，在这三者中，优先性是第一位的。")
+    else:
+        options = whisper.DecodingOptions(beam_size=5)
     result = whisper.decode(model, mel, options)
 
     # print the recognized text
