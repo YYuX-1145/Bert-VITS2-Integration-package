@@ -2,7 +2,7 @@ import os
 import librosa
 import numpy as np
 from multiprocessing import Pool, cpu_count
-
+from . import get_lang
 import soundfile
 #from scipy.io import wavfile
 from tqdm import tqdm
@@ -43,33 +43,21 @@ def process_text(item):
     text = f'{lang}|{text}\n' #
     speaker_annos.append(args.out_dir+'/'+speaker+'/'+wav_name+ "|" + speaker + "|" + text)
 
-def get_lang(languages):
-      if (languages == "C"or languages == "c"):
-        lang='ZH'
-        return lang,True 
-      elif (languages == "J"or languages == "j"):
-        lang='JP'
-        return lang,True 
-      elif (languages == "E"or languages == "e"):
-        lang='EN'
-        return lang,True
-      else :
-         return None,False   
+  
 
 def run(args):
     global speaker_annos
     speaker_annos = []
-    if len (args.languages)!=1:
-      entered = False      
-    else:
-       languages=args.languages[0]
+    lang = None
+    if len (args.languages)==1:
+       languages=args.languages
        lang,entered=get_lang(languages)
-    while not entered:
+    while lang is None:
       print("Enter a letter to choose language.\n")
-      print("C = Chinese ; J = Japanese ;E = English;\n e.g: C \n")
+      print("C = Chinese ; J = Japanese ;E = English;M = Chose language for each speaker later.\n e.g: C \n")
       languages=input("Enter language: ")
       lang,entered=get_lang(languages)
-      if entered:
+      if lang is not None:
          break
       else:
         print("Illegal Arguments! Please try again.\n")
@@ -84,7 +72,11 @@ def run(args):
     for speaker in os.listdir(args.in_dir):
         spk_dir = os.path.join(args.in_dir, speaker)
         if os.path.isdir(spk_dir):
-            print(spk_dir)
+          if not entered:
+            lang=None
+            while lang is None or lang=="m":
+                lang,_ = get_lang(input(f"Enter a letter to choose language for Speaker: {spk_dir} :"))
+            print(f"{spk_dir}:{lang}")
             for _ in tqdm(pool.imap_unordered(process, [(spk_dir, i, args) for i in os.listdir(spk_dir) if i.endswith("wav")])):
                 pass
             for i in os.listdir(spk_dir):

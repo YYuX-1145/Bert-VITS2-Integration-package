@@ -35,23 +35,10 @@ def transcribe_one(audio_path):
     return lang, result.text
 def run(args):
     global model
-    lang2token={}
-    if "C" in args.languages.upper():
-        lang2token["zh"]="ZH|"
-    if "J" in args.languages.upper():
-        lang2token["ja"]="JP|"
-    if "E" in args.languages.upper():
-        lang2token["en"]="EN|"
-    if lang2token=={}:
-            lang2token = {
-            'zh': "ZH|",
-            'ja': "JP|",
-            "en": "EN|",
-        }
-    print(lang2token)
+    print(args.langdict)
     assert (torch.cuda.is_available()), "Please enable GPU in order to run Whisper!"
     #model = whisper.load_model(args.whisper_size)
-    model = whisper.load_model(args.whisper_size, download_root = os.path.join(current_directory,"models","whisper_model"))
+    model = whisper.load_model(args.whisper_size, download_root = os.path.join(current_directory,"trancscript_models","whisper_model"))
     #parent_dir = "./custom_character_voice/"
     parent_dir=args.in_dir
     sav_dir=args.out_dir
@@ -88,17 +75,17 @@ def run(args):
                 try:
                     with open((lab_path), "r", encoding="utf-8") as f:
                         text=f.read()
-                    assert text[0:3] in lang2token.values()
+                    assert text[0:3] in args.langdict.values()
                     print("[进度恢复]： "+lab_path+"已找到并已经成功读取") 
                 except:
                     if not processed:
                         print("[进度恢复]： "+lab_path+"未找到、读取错误或不是目标语言")
                     lang, text = transcribe_one(save_path)
-                    if lang not in list(lang2token.keys()):
+                    if lang not in list(args.langdict.keys()):
                         print(f"{lang} not supported, ignoring\n")
                         continue
                 #text = "ZH|" + text + "\n"                
-                    text = lang2token[lang] + text + "\n"
+                    text = args.langdict[lang] + text + "\n"
                     with open((lab_path), "w", encoding="utf-8") as f:
                         f.write(text)
                 speaker_annos.append("./"+save_path.replace('\\','/') + "|" + speaker + "|" + text)
