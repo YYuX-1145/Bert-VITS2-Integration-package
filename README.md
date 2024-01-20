@@ -21,7 +21,7 @@ bilibili@数列解析几何一生之敌
 
 # Bert-VITS2整合包打标组件
 # 简介
-为本整合包或其他项目配套制作的快速易用的打标工具包。支持whisper、FunASR和原神数据集快速处理。其中FunASR支持多进程。
+为本整合包或其他项目配套制作的快速易用的打标工具包。支持whisper、FunASR和原神数据集快速处理。支持进度恢复，意外终止进度不丢失。其中FunASR支持多进程。
 ## 安装依赖
 ```
 pip install -r transcribe_tools/requirements.txt
