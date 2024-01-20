@@ -25,6 +25,7 @@ if __name__ == "__main__":
                                 args.transcription_path,
                                 args.in_dir,args.out_dir,
                                 args.sr,args.processes,
+                                False,
                                 False
                                 ).run_transcribe()    
     t2 = time.time()
