@@ -6,7 +6,7 @@ import torchaudio
 import torch
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
-os.environ['PATH']=os.path.join(current_directory,"ffmpeg","bin")
+
 
 def transcribe_one(audio_path):
     global model
@@ -40,8 +40,10 @@ def run(args):
     global model
     print(args.langdict)
     assert (torch.cuda.is_available()), "Please enable GPU in order to run Whisper!"
-    #model = whisper.load_model(args.whisper_size)
-    model = whisper.load_model(args.whisper_size, download_root = os.path.join(current_directory,"trancscript_models","whisper_model"))
+    if not args.use_global_cache:
+        model = whisper.load_model(args.whisper_size, download_root = os.path.join(current_directory,"trancscript_models","whisper_model"))
+    else:
+        model = whisper.load_model(args.whisper_size)
     #parent_dir = "./custom_character_voice/"
     parent_dir=args.in_dir
     sav_dir=args.out_dir

@@ -1,14 +1,9 @@
 import os
 import json
 current_directory = os.path.dirname(os.path.abspath(__file__))
-os.makedirs(os.path.join(current_directory,"models","funasr"),exist_ok=True)
-os.makedirs(os.path.join(current_directory,"models","whisper_model"),exist_ok=True)
-
-
-
 
 class transcribe():
-   def __init__(self,engine="whisper",languages="M",whisper_size="large",transcription_path=None,in_dir=None,out_dir=None,sr=44100,processes=0,use_global_cache=True) -> None:
+   def __init__(self,engine="whisper",languages="M",whisper_size="large",transcription_path=None,in_dir=None,out_dir=None,sr=44100,processes=0,use_global_cache=True,use_path_ffmpeg=True) -> None:
       self.engine:str=engine
       self.languages:str=languages
       langdict={}
@@ -31,7 +26,11 @@ class transcribe():
       self.out_dir:str=out_dir
       self.sr:int=sr
       self.processes:int=processes
-      if not use_global_cache:
+      self.use_global_cache:bool=use_global_cache
+      self.use_path_ffmpeg:bool=use_path_ffmpeg
+      if not self.use_global_cache:
+         os.makedirs(os.path.join(current_directory,"models","funasr"),exist_ok=True)
+         os.makedirs(os.path.join(current_directory,"models","whisper_model"),exist_ok=True)
          os.environ["MODELSCOPE_CACHE"] = os.path.join(current_directory,"trancscript_models","funasr")
       if engine=="funasr":
         with open(os.path.join(current_directory,"init.json"), 'w', encoding='utf-8') as f:
@@ -47,6 +46,8 @@ class transcribe():
         from .transcribe_genshin import run
         print("[INFO]: Processing genshin datasets ...")
       else:
+        if not self.use_path_ffmpeg:
+         os.environ['PATH']=os.path.join(current_directory,"ffmpeg","bin")
         from .whisper_transcribe import run
         print("[INFO]: Use Whisper to trancribe...")
       run(self)
