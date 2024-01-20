@@ -12,7 +12,7 @@ from . import funasr_transcribe_one
 def transcribe_one(item):
     parent_dir,sav_dir,speaker,wavfile,target_sr,language=item
     if not wavfile.startswith("processed_"):
-        #try:
+        try:
             save_path = sav_dir+"/"+ speaker + "/" + f"processed_{wavfile}"
             lab_path = sav_dir+"/"+ speaker + "/" + f"processed_{os.path.splitext(wavfile)[0]}.lab"
             wav_path =parent_dir + "/" + speaker + "/" + wavfile
@@ -44,8 +44,8 @@ def transcribe_one(item):
                 with open((lab_path), "w", encoding="utf-8") as f:
                     f.write(text)        
             return "./"+save_path.replace('\\','/') + "|" + speaker + "|" + text 
-        #except Exception as e:
-            #print(e)  
+        except Exception as e:
+            print(e)  
 
 def run_transcription(speaker,processs,language):
     global parent_dir,sav_dir,target_sr
@@ -71,7 +71,7 @@ def run(args):
       print("C = Chinese ; J = Japanese ;E = English;M = Chose language for each speaker later.\n e.g: C \n")
       languages=input("Enter language: ")
       lang,entered=get_lang(languages)
-      if lang is not None or lang=="m":
+      if lang is not None or lang in [i[0:2] for i in args.langdict.values()]:
          break
       else:
         print("Illegal Arguments! Please try again.\n")
