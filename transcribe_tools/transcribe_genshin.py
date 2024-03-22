@@ -72,8 +72,8 @@ def run(args):
     for speaker in os.listdir(args.in_dir):
         spk_dir = os.path.join(args.in_dir, speaker)
         if os.path.isdir(spk_dir):
-          if not entered:
-            lang=None
+            if not entered:
+                lang=None
             while lang is None or lang=="m":
                 lang,_ = get_lang(input(f"Enter a letter to choose language for Speaker: {spk_dir} :"))
             print(f"{spk_dir}:{lang}")
