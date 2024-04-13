@@ -96,6 +96,8 @@ def infer(
     if isinstance(reference_audio, np.ndarray):
         emo = get_clap_audio_feature(reference_audio, device)
     else:
+        if emotion is None:
+            emotion=""
         emo = get_clap_text_feature(emotion, device)
     emo = torch.squeeze(emo, dim=1)
 
